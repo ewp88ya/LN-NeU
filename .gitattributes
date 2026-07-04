@@ -1,0 +1,36 @@
+# =========================
+# LN-NeU GITATTRIBUTES
+# =========================
+
+# Normalize line endings
+* text=auto
+
+# Force LF for scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Source code
+*.js text
+*.ts text
+*.json text
+*.md text
+*.yml text
+*.yaml text
+
+# Images (binary)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+
+# Fonts
+*.ttf binary
+*.otf binary
+
+# Prevent diff noise
+*.lock binary
+
+# Docker
+Dockerfile text
+docker-compose.yml text
