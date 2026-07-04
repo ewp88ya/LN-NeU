@@ -1,4 +1,4 @@
-# LN-NeU Project
+# AI SaaS core system
 
 Full AI + Backend + Database stack using Docker
 
