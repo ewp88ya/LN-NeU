@@ -1,119 +1,131 @@
 const express = require("express");
-const cors = require("cors");
 const axios = require("axios");
 const { Client } = require("pg");
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
-// ================= DB =================
+// ================= DATABASE =================
 const db = new Client({
   host: "postgres",
   user: "dev",
   password: "123",
   database: "appdb",
+  port: 5432,
 });
 
-db.connect().catch((err) => {
-  console.log("DB connection error:", err.message);
-});
+// retry connect DB (WAJIB untuk docker)
+async function connectDB() {
+  while (true) {
+    try {
+      await db.connect();
+      console.log("DB connected");
+      break;
+    } catch (err) {
+      console.log("DB not ready, retrying...");
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+}
 
-// ================= HEALTH =================
+// init table
+async function initDB() {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS chats (
+        id SERIAL PRIMARY KEY,
+        msg TEXT
+      )
+    `);
+    console.log("Table ready");
+  } catch (err) {
+    console.log("Init DB error:", err.message);
+  }
+}
+
+// ================= ROUTES =================
+
+// health check
 app.get("/", (req, res) => {
-  res.json({ status: "Backend OK 🚀" });
+  res.json({ message: "Backend OK 🚀" });
 });
 
-// ================= REGISTER =================
-app.post("/register", async (req, res) => {
+// save message
+app.get("/save", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const msg = req.query.msg;
+    await db.query("INSERT INTO chats(msg) VALUES($1)", [msg]);
 
-    await db.query(
-      "INSERT INTO users(email, password) VALUES($1, $2)",
-      [email, password]
-    );
-
-    res.json({ status: "registered" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ================= LOGIN (simple version, no bcrypt biar stabil) =================
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await db.query(
-      "SELECT * FROM users WHERE email=$1",
-      [email]
-    );
-
-    if (!user.rows[0]) {
-      return res.status(401).json({ error: "user not found" });
-    }
-
-    if (user.rows[0].password !== password) {
-      return res.status(401).json({ error: "wrong password" });
-    }
-
-    res.json({ status: "login success", user: user.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ================= CHAT STREAM (SAFE VERSION) =================
-app.post("/chat-stream", async (req, res) => {
-  const message = req.body.message;
-
-  res.setHeader("Content-Type", "text/plain; charset=utf-8");
-  res.setHeader("Transfer-Encoding", "chunked");
-
-  try {
-    const ai = await axios.post("http://ai:8000/ask", {
-      prompt: message,
+    res.json({
+      status: "saved",
+      msg,
     });
-
-    res.write(ai.data.response || "AI offline");
-    res.end();
   } catch (err) {
-    res.write("AI service error");
-    res.end();
+    res.status(500).json({
+      error: "Failed to save message",
+      detail: err.message,
+    });
   }
 });
 
-// ================= SAVE CHAT =================
-app.post("/chat", async (req, res) => {
-  try {
-    const { message } = req.body;
-
-    const result = await db.query(
-      "INSERT INTO chats(role, message) VALUES($1, $2) RETURNING *",
-      ["user", message]
-    );
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ================= GET CHATS =================
+// get all chats
 app.get("/chats", async (req, res) => {
   try {
-    const result = await db.query(
-      "SELECT * FROM chats ORDER BY id ASC"
-    );
-
+    const result = await db.query("SELECT * FROM chats ORDER BY id DESC");
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      error: "Failed to fetch chats",
+      detail: err.message,
+    });
   }
 });
 
-// ================= START (DOCKER SAFE) =================
-app.listen(3000, "0.0.0.0", () => {
+// get chat by id
+app.get("/chat/:id", async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT * FROM chats WHERE id = $1",
+      [req.params.id]
+    );
+
+    res.json(result.rows[0] || {});
+  } catch (err) {
+    res.status(500).json({
+      error: "Failed to fetch chat",
+      detail: err.message,
+    });
+  }
+});
+
+// ================= AI INTEGRATION =================
+app.get("/api/ask-ai", async (req, res) => {
+  const prompt = req.query.prompt;
+
+  try {
+    const aiResponse = await axios.post("http://ai:8000/ask", {
+      prompt: prompt,
+    });
+
+    res.json({
+      prompt,
+      ai_response: aiResponse.data,
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "AI service not reachable",
+      detail: err.message,
+    });
+  }
+});
+
+// ================= START SERVER =================
+app.listen(3000, () => {
   console.log("Backend running on port 3000");
 });
+
+// ================= STARTUP ORDER (IMPORTANT) =================
+(async () => {
+  await connectDB();
+  await initDB();
+})();

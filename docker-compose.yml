@@ -1,28 +1,33 @@
 services:
-
-  # ================= POSTGRES =================
   postgres:
-    image: postgres:16
+    image: postgres
     container_name: postgres
-    restart: always
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: 123
       POSTGRES_DB: appdb
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
-  # ================= REDIS =================
   redis:
-    image: redis:7
+    image: redis
     container_name: redis
-    restart: always
     ports:
       - "6379:6379"
 
-  # ================= AI SERVICE =================
+  backend:
+    image: node:20
+    container_name: backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: node index.js
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+
   ai:
     image: python:3.11
     container_name: ai
@@ -32,35 +37,3 @@ services:
     command: sh -c "pip install fastapi uvicorn && uvicorn main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
-    restart: always
-
-  # ================= BACKEND (SAAS API) =================
-  backend:
-    image: node:20
-    container_name: backend
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    command: sh -c "npm install && node index.js"
-    ports:
-      - "3000:3000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    depends_on:
-      - postgres
-      - redis
-      - ai
-    restart: always
-
-  # ================= NGINX (OPTIONAL GATEWAY) =================
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-      - "8080:80"
-    depends_on:
-      - backend
-
-# ================= VOLUMES =================
-volumes:
-  postgres_data:
