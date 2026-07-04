@@ -18,7 +18,7 @@ jobs:
 <<<<<<< HEAD
       - name: Install dependencies
 =======
-      # 🚨 WAJIB DI FRONTEND
+
       - name: Install frontend dependencies
 >>>>>>> 44750ec (fix CI: correct working directory for frontend)
         working-directory: frontend
