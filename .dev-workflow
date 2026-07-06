@@ -1,0 +1,11 @@
+# SAAS DEV WORKFLOW RULES
+
+1. All development happens in WSL workspace
+2. No auto background commits allowed
+3. Git commit must represent logical change unit
+4. GitHub is single source of truth
+5. Every push = intentional production snapshot
+6. No dirty commits allowed
+7. Branch strategy:
+   - main = production ready
+   - dev = active development
