@@ -1,39 +1,35 @@
+version: "3.9"
+
 services:
-  postgres:
-    image: postgres
-    container_name: postgres
-    environment:
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: 123
-      POSTGRES_DB: appdb
-    ports:
-      - "5432:5432"
 
-  redis:
-    image: redis
-    container_name: redis
-    ports:
-      - "6379:6379"
-
-  backend:
-    image: node:20
-    container_name: backend
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    command: node index.js
-    ports:
-      - "3000:3000"
-    depends_on:
-      - postgres
-      - redis
-
-  ai:
-    image: python:3.11
-    container_name: ai
-    working_dir: /app
-    volumes:
-      - ./ai:/app
-    command: sh -c "pip install fastapi uvicorn && uvicorn main:app --host 0.0.0.0 --port 8000"
+  ln-neu-core:
+    build: ./backend
+    container_name: ln-neu-core
     ports:
       - "8000:8000"
+    restart: always
+
+  santor:
+    build: ./frontend
+    container_name: santor-app
+    ports:
+      - "3000:3000"
+    restart: always
+    depends_on:
+      - ln-neu-core
+
+  tictac:
+    build: ./ai
+    container_name: tictac-agent
+    restart: always
+    depends_on:
+      - ln-neu-core
+
+  admin:
+    build: ./admin
+    container_name: admin-panel
+    ports:
+      - "4000:4000"
+    restart: always
+    depends_on:
+      - ln-neu-core

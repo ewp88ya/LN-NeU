@@ -58,3 +58,6 @@ coverage/
 .sass-cache/
 
 autosync.log
+
+# Private Documentation
+docs/private/
