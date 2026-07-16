@@ -1,0 +1,8 @@
+packages:
+  - "backend"
+  - "frontend"
+  - "ai"
+allowBuilds:
+  '@prisma/engines': false
+  esbuild: false
+  prisma: false
