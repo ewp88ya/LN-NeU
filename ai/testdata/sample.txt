@@ -1,0 +1,9 @@
+LN-NeU is the AI Core Engine.
+
+It provides workflow orchestration,
+memory management,
+multi-agent execution,
+tool runtime,
+and retrieval capabilities.
+
+Santor and Tictac consume LN-NeU APIs.

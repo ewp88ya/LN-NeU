@@ -3,6 +3,8 @@ from memory.persistent import PersistentMemory
 from memory import create_memory_manager
 from memory import MemoryRetrieval
 
+from security import PromptGuard, AgentIsolation
+
 from planners.planner import PlannerAgent
 
 from observability.logger import AILogger
@@ -22,13 +24,19 @@ class WorkflowEngine:
         self.persistent = PersistentMemory()
 
         self.memory_manager = create_memory_manager()
+
         self.memory_retrieval = MemoryRetrieval(
             self.memory_manager
         )
 
+        self.prompt_guard = PromptGuard()
+
+        self.agent_isolation = AgentIsolation()
+
         self.planner = PlannerAgent()
 
         self.logger = AILogger()
+
         self.processor = ProcessingPipeline()
 
         self.agent_manager = AgentManager()
@@ -45,8 +53,17 @@ class WorkflowEngine:
             OptimizerAgent()
         )
 
-
     async def execute(self, task, agent=None):
+
+        security = self.prompt_guard.inspect(
+            task.input
+        )
+
+        if not security["allowed"]:
+            return {
+                "status": "blocked",
+                "reason": security["reason"]
+            }
 
         log = self.logger.start(
             task.task_id,
@@ -79,6 +96,17 @@ class WorkflowEngine:
 
         for agent_name in plan.agents:
 
+            if not self.agent_isolation.validate(
+                agent_name,
+                task
+            ):
+                results.append({
+                    "agent": agent_name,
+                    "status": "blocked",
+                    "reason": "agent isolation"
+                })
+                continue
+
             result = await self.agent_manager.execute(
                 agent_name,
                 task
@@ -103,6 +131,10 @@ class WorkflowEngine:
             "planner": plan.model_dump(),
             "persistent": True,
             "memory_context": True,
+            "security": {
+                "prompt_guard": True,
+                "agent_isolation": True
+            },
             "execution": execution,
             "agents": results
         }
