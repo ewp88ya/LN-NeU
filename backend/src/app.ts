@@ -3,6 +3,9 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 
+import { aiRoute } from "./routes/v1/ai.route";
+
+
 const app = Fastify({
   logger: {
     transport:
@@ -30,6 +33,9 @@ await app.register(rateLimit, {
   max: 100,
   timeWindow: "1 minute",
 });
+
+
+await app.register(aiRoute);
 
 
 app.get("/health", async () => {

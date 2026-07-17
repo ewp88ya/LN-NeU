@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export interface AITaskRequest {
   taskId: string;
   action: string;
@@ -12,11 +14,14 @@ export interface AIResponse {
 }
 
 export class AIClient {
-  async execute(
-    task: AITaskRequest
-  ): Promise<AIResponse> {
+  private readonly url = "http://localhost:8000";
 
-    // bridge Fastify -> AI Engine
-    throw new Error("AI Engine bridge not connected");
+  async execute(task: AITaskRequest): Promise<AIResponse> {
+    const response = await axios.post(
+      `${this.url}/execute`,
+      task
+    );
+
+    return response.data;
   }
 }

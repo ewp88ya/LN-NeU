@@ -8,6 +8,25 @@ services:
     ports:
       - "8000:8000"
     restart: always
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://lnneu:lnneu_password@postgres:5432/lnneu
+
+
+  postgres:
+    image: postgres:16
+    container_name: ln-neu-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: lnneu
+      POSTGRES_PASSWORD: lnneu_password
+      POSTGRES_DB: lnneu
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
 
   santor:
     build: ./frontend
@@ -18,12 +37,14 @@ services:
     depends_on:
       - ln-neu-core
 
+
   tictac:
     build: ./ai
     container_name: tictac-agent
     restart: always
     depends_on:
       - ln-neu-core
+
 
   admin:
     build: ./admin
@@ -33,3 +54,7 @@ services:
     restart: always
     depends_on:
       - ln-neu-core
+
+
+volumes:
+  postgres_data:

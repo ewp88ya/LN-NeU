@@ -1,6 +1,7 @@
 from memory.context import MemoryContext
 from memory.persistent import PersistentMemory
 from observability.logger import AILogger
+from processing.pipeline import ProcessingPipeline
 
 from agents.core.manager import AgentManager
 from agents.modules.analysis_agent import AnalysisAgent
@@ -15,6 +16,8 @@ class WorkflowEngine:
         self.memory = MemoryContext()
         self.persistent = PersistentMemory()
         self.logger = AILogger()
+
+        self.processor = ProcessingPipeline()
 
         self.agent_manager = AgentManager()
 
@@ -38,13 +41,10 @@ class WorkflowEngine:
             task.action
         )
 
-
+        processed = self.processor.process(task)
         self.memory.save(
-            task.taskId,
-            {
-                "action": task.action,
-                "input": task.input
-            }
+             task.taskId,
+             processed
         )
 
 
