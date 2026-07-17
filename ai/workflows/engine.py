@@ -2,6 +2,7 @@ from memory.context import MemoryContext
 from memory.persistent import PersistentMemory
 from memory import create_memory_manager
 from memory import MemoryRetrieval
+
 from planners.planner import PlannerAgent
 
 from observability.logger import AILogger
@@ -21,15 +22,13 @@ class WorkflowEngine:
         self.persistent = PersistentMemory()
 
         self.memory_manager = create_memory_manager()
-
-        self.planner = PlannerAgent()
-
         self.memory_retrieval = MemoryRetrieval(
             self.memory_manager
         )
 
-        self.logger = AILogger()
+        self.planner = PlannerAgent()
 
+        self.logger = AILogger()
         self.processor = ProcessingPipeline()
 
         self.agent_manager = AgentManager()
@@ -50,39 +49,35 @@ class WorkflowEngine:
     async def execute(self, task, agent=None):
 
         log = self.logger.start(
-            task.taskId,
+            task.task_id,
             task.action
         )
 
         context = self.memory_retrieval.retrieve_context(
-            task.taskId,
+            task.task_id,
             task.input
         )
 
         task.context = context
 
-
         processed = self.processor.process(
             task
         )
 
-
         self.memory.save(
-            task.taskId,
+            task.task_id,
             processed
         )
 
+        plan = self.planner.create_plan(
+            task
+        )
+
+        task.plan = plan
 
         results = []
 
-
-        plan = self.planner.create_plan(
-        task
-        )
-
-        selected_agents = plan["agents"]
-
-        for agent_name in selected_agents:
+        for agent_name in plan.agents:
 
             result = await self.agent_manager.execute(
                 agent_name,
@@ -91,23 +86,21 @@ class WorkflowEngine:
 
             results.append(result)
 
-
         self.persistent.store(
-            task.taskId,
+            task.task_id,
             task.action,
             task.input,
             results
         )
-
 
         execution = self.logger.finish(
             log,
             results
         )
 
-
         return {
-            "workflow": "multi-agent",
+            "workflow": "planner-multi-agent",
+            "planner": plan.model_dump(),
             "persistent": True,
             "memory_context": True,
             "execution": execution,
