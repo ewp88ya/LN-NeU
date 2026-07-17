@@ -2,6 +2,7 @@ from memory.context import MemoryContext
 from memory.persistent import PersistentMemory
 from memory import create_memory_manager
 from memory import MemoryRetrieval
+from planners.planner import PlannerAgent
 
 from observability.logger import AILogger
 from processing.pipeline import ProcessingPipeline
@@ -20,6 +21,8 @@ class WorkflowEngine:
         self.persistent = PersistentMemory()
 
         self.memory_manager = create_memory_manager()
+
+        self.planner = PlannerAgent()
 
         self.memory_retrieval = MemoryRetrieval(
             self.memory_manager
@@ -73,12 +76,11 @@ class WorkflowEngine:
         results = []
 
 
-        selected_agents = [
-            "network-agent",
-            "analysis-agent",
-            "optimizer-agent"
-        ]
+        plan = self.planner.create_plan(
+        task
+        )
 
+        selected_agents = plan["agents"]
 
         for agent_name in selected_agents:
 
