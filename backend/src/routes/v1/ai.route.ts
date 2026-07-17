@@ -15,7 +15,7 @@ export async function aiRoute(
 
 
     const response = await fetch(
-      "http://localhost:8000/execute",
+      "http://ai:8000/execute",
       {
         method: "POST",
         headers: {

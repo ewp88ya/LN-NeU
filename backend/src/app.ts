@@ -3,21 +3,21 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 
-import { aiRoute } from "./routes/v1/ai.route";
+import { aiRoute } from "./routes/v1/ai.route.js";
 
 
 const app = Fastify({
-  logger: {
-    transport:
-      process.env.NODE_ENV === "development"
-        ? {
+  logger:
+    process.env.NODE_ENV === "development"
+      ? {
+          transport: {
             target: "pino-pretty",
             options: {
               translateTime: "HH:MM:ss",
             },
-          }
-        : undefined,
-  },
+          },
+        }
+      : true,
 });
 
 
@@ -41,7 +41,8 @@ await app.register(aiRoute);
 app.get("/health", async () => {
   return {
     status: "ok",
-    service: "LN-NeU API",
+    service: "LN-NeU Core API",
+    version: "1.0.0",
     timestamp: new Date().toISOString(),
   };
 });

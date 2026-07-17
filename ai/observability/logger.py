@@ -29,3 +29,13 @@ class AILogger:
             "status": "success",
             "result": result
         }
+
+
+    def error(self, task_id, message):
+
+        return {
+            "taskId": task_id,
+            "status": "error",
+            "error": message,
+            "timestamp": time.time()
+        }

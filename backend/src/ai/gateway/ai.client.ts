@@ -1,27 +1,20 @@
 import axios from "axios";
 
-export interface AITaskRequest {
-  taskId: string;
-  action: string;
-  input: string;
-  context?: Record<string, unknown>;
-}
+const AI_URL =
+  process.env.AI_ENGINE_URL ||
+  "http://ai:8000";
 
-export interface AIResponse {
-  taskId: string;
-  status: string;
-  result: unknown;
-}
 
 export class AIClient {
-  private readonly url = "http://localhost:8000";
 
-  async execute(task: AITaskRequest): Promise<AIResponse> {
+  async execute(payload: unknown) {
+
     const response = await axios.post(
-      `${this.url}/execute`,
-      task
+      `${AI_URL}/execute`,
+      payload
     );
 
     return response.data;
   }
+
 }

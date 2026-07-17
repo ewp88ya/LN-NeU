@@ -1,4 +1,4 @@
-from queue import TaskQueue
+from task_queue.instance import task_queue
 
 from agents.executor import AgentExecutor
 from workflows.engine import WorkflowEngine
@@ -12,7 +12,9 @@ class TaskRouter:
 
         self.workflow = WorkflowEngine()
 
-        self.queue = TaskQueue()
+        # Shared queue with worker
+        self.queue = task_queue
+
 
     async def route(self, task):
 
@@ -21,6 +23,6 @@ class TaskRouter:
         return {
             "status": "queued",
             "message": "Task successfully queued",
-            "task_id": task.task_id,
+            "task_id": task.taskId,
             "queue_size": self.queue.size()
         }

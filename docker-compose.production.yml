@@ -1,0 +1,98 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: ln-neu-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: lnneu
+      POSTGRES_PASSWORD: lnneu_password
+      POSTGRES_DB: lnneu
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - lnneu-network
+
+
+  redis:
+    image: redis:7
+    container_name: ln-neu-redis
+    restart: always
+    networks:
+      - lnneu-network
+
+
+  ai:
+    image: ln-neu-ai:production
+    container_name: ln-neu-ai
+    restart: always
+    environment:
+      PYTHONPATH: /app
+    command:
+      uvicorn main:app --host 0.0.0.0 --port 8000
+    expose:
+      - "8000"
+    depends_on:
+      - redis
+    networks:
+      - lnneu-network
+
+
+  ai-worker:
+    image: ln-neu-ai:production
+    container_name: ln-neu-ai-worker
+    restart: always
+    environment:
+      PYTHONPATH: /app
+    command:
+      python -m task_queue.runner
+    depends_on:
+      - redis
+      - ai
+    networks:
+      - lnneu-network
+
+
+  core:
+    build:
+      context: ./backend
+    container_name: ln-neu-core
+    restart: always
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - redis
+      - ai
+    networks:
+      - lnneu-network
+
+
+  nginx:
+    image: nginx:latest
+    container_name: ln-neu-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - core
+      - ai
+    networks:
+      - lnneu-network
+
+
+volumes:
+
+  postgres_data:
+
+
+networks:
+
+  lnneu-network:
+    driver: bridge
