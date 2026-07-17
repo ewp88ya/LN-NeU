@@ -7,6 +7,8 @@ from agents.core.manager import AgentManager
 from agents.modules.analysis_agent import AnalysisAgent
 from agents.modules.network_agent import NetworkAgent
 from agents.modules.optimizer_agent import OptimizerAgent
+from memory import create_memory_manager
+from memory import MemoryRetrieval
 
 
 class WorkflowEngine:
@@ -16,6 +18,12 @@ class WorkflowEngine:
         self.memory = MemoryContext()
         self.persistent = PersistentMemory()
         self.logger = AILogger()
+
+        self.memory_manager = create_memory_manager()
+
+        self.memory_retrieval = MemoryRetrieval(
+        self.memory_manager
+        )
 
         self.processor = ProcessingPipeline()
 
@@ -41,12 +49,10 @@ class WorkflowEngine:
             task.action
         )
 
-        processed = self.processor.process(task)
-        self.memory.save(
-             task.taskId,
-             processed
+        context = self.memory_retrieval.retrieve_context(
+            task.taskId,
+            task.input
         )
-
 
         results = []
 
