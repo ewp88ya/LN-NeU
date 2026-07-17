@@ -13,10 +13,12 @@ class AnalysisAgent(BaseAgent):
 
     async def run(self, task):
 
+        memory = self.get_memory(task)
+
         prompt = f"""
 You are Analysis Agent.
 
-Analyze this task:
+Analyze this task.
 
 Action:
 {task.action}
@@ -24,12 +26,20 @@ Action:
 Input:
 {task.input}
 
+Previous Context:
+{memory}
+
+Use previous context when relevant.
+
 Give technical analysis.
 """
 
-        response = await self.model.generate(prompt)
+        response = await self.model.generate(
+            prompt
+        )
 
         return {
             "agent": self.name,
+            "memory_used": True,
             "result": response
         }
