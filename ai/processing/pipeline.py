@@ -1,24 +1,20 @@
-from processing.parser import DataParser
-from processing.validator import DataValidator
-from processing.transformer import DataTransformer
+from processing.middleware import (
+    InputValidator,
+    InputNormalizer,
+)
 
 
 class ProcessingPipeline:
 
     def __init__(self):
 
-        self.parser = DataParser()
-        self.validator = DataValidator()
-        self.transformer = DataTransformer()
-
+        self.validator = InputValidator()
+        self.normalizer = InputNormalizer()
 
     def process(self, task):
 
-        data = self.parser.parse(task)
+        task = self.validator.validate(task)
 
-        if not self.validator.validate(data):
-            raise ValueError("Invalid task data")
+        task = self.normalizer.normalize(task)
 
-        data = self.transformer.transform(data)
-
-        return data
+        return task

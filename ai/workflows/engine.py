@@ -8,7 +8,21 @@ from security import PromptGuard, AgentIsolation
 from planners.planner import PlannerAgent
 
 from observability.logger import AILogger
-from processing.pipeline import ProcessingPipeline
+
+from processing import (
+    ProcessingPipeline,
+    TaskContext,
+)
+
+from processing.stages import InputStage
+
+from processing.middleware import (
+    OutputFormatter,
+    ErrorHandler,
+)
+
+from tools import ToolRuntime
+from tools import ToolSelector
 
 from agents.core.manager import AgentManager
 from agents.modules.analysis_agent import AnalysisAgent
@@ -18,7 +32,9 @@ from agents.modules.optimizer_agent import OptimizerAgent
 
 class WorkflowEngine:
 
+
     def __init__(self):
+
 
         # =========================
         # Memory Layer
@@ -44,11 +60,13 @@ class WorkflowEngine:
         self.agent_isolation = AgentIsolation()
 
 
+
         # =========================
-        # Planning Layer
+        # Planner Layer
         # =========================
 
         self.planner = PlannerAgent()
+
 
 
         # =========================
@@ -58,11 +76,36 @@ class WorkflowEngine:
         self.logger = AILogger()
 
 
+
         # =========================
-        # Processing Pipeline
+        # Processing Layer
         # =========================
 
         self.processor = ProcessingPipeline()
+
+
+        self.input_stage = InputStage(
+            self.processor,
+            self.prompt_guard,
+            self.memory_retrieval,
+            self.memory
+        )
+
+
+        self.output_formatter = OutputFormatter()
+
+        self.error_handler = ErrorHandler()
+
+
+
+        # =========================
+        # Tool Runtime
+        # =========================
+
+        self.tool_runtime = ToolRuntime()
+
+        self.tool_selector = ToolSelector()
+
 
 
         # =========================
@@ -76,13 +119,16 @@ class WorkflowEngine:
             AnalysisAgent()
         )
 
+
         self.agent_manager.register_agent(
             NetworkAgent()
         )
 
+
         self.agent_manager.register_agent(
             OptimizerAgent()
         )
+
 
 
     async def execute(
@@ -91,35 +137,11 @@ class WorkflowEngine:
         agent=None
     ):
 
-        # Compatible with AITask schema
+
         task_id = task.taskId
 
-
-        # =========================
-        # Security Check
-        # =========================
-
-        security = self.prompt_guard.inspect(
-            task.input
-        )
-
-
-        if not security["allowed"]:
-
-            return {
-                "status": "blocked",
-                "task_id": task_id,
-                "reason": security["reason"]
-            }
-
-
-        # =========================
-        # Start Logging
-        # =========================
-
-        log = self.logger.start(
-            task_id,
-            task.action
+        runtime = TaskContext(
+            task
         )
 
 
@@ -127,31 +149,25 @@ class WorkflowEngine:
 
 
             # =========================
-            # Memory Retrieval
+            # Input Stage
             # =========================
 
-            context = self.memory_retrieval.retrieve_context(
-                task_id,
-                task.input
+            runtime = self.input_stage.run(
+                runtime
             )
 
 
-            task.context = context
+            task = runtime.task
 
 
 
             # =========================
-            # Processing Pipeline
+            # Logging
             # =========================
 
-            processed = self.processor.process(
-                task
-            )
-
-
-            self.memory.save(
+            log = self.logger.start(
                 task_id,
-                processed
+                task.action
             )
 
 
@@ -160,16 +176,12 @@ class WorkflowEngine:
             # Planner
             # =========================
 
-            plan = self.planner.create_plan(
+            runtime.plan = self.planner.create_plan(
                 task
             )
 
 
-            task.plan = plan
-
-
-
-            results = []
+            task.plan = runtime.plan
 
 
 
@@ -177,7 +189,7 @@ class WorkflowEngine:
             # Agent Execution
             # =========================
 
-            for agent_name in plan.agents:
+            for agent_name in runtime.plan.agents:
 
 
                 if not self.agent_isolation.validate(
@@ -185,7 +197,8 @@ class WorkflowEngine:
                     task
                 ):
 
-                    results.append(
+
+                    runtime.add_agent_result(
                         {
                             "agent": agent_name,
                             "status": "blocked",
@@ -199,24 +212,29 @@ class WorkflowEngine:
 
                 try:
 
+
                     result = await self.agent_manager.execute(
                         agent_name,
-                        task
+                        task,
+                        self.tool_runtime,
+                        self.tool_selector
                     )
 
 
-                    results.append(
+                    runtime.add_agent_result(
                         result
                     )
 
 
                 except Exception as agent_error:
 
-                    results.append(
+
+                    runtime.add_agent_result(
                         {
                             "agent": agent_name,
                             "status": "failed",
-                            "error": str(agent_error)
+                            "error": repr(agent_error),
+                            "error_type": type(agent_error).__name__
                         }
                     )
 
@@ -230,7 +248,7 @@ class WorkflowEngine:
                 task_id,
                 task.action,
                 task.input,
-                results
+                runtime.agent_results
             )
 
 
@@ -239,14 +257,15 @@ class WorkflowEngine:
             # Finish Logging
             # =========================
 
-            execution = self.logger.finish(
+            runtime.execution = self.logger.finish(
                 log,
-                results
+                runtime.agent_results
             )
 
 
 
-            return {
+            response = {
+
 
                 "status": "completed",
 
@@ -254,11 +273,15 @@ class WorkflowEngine:
 
                 "workflow": "planner-multi-agent",
 
-                "planner": plan.model_dump(),
+
+                "planner": runtime.plan.model_dump(),
+
 
                 "persistent": True,
 
+
                 "memory_context": True,
+
 
                 "security": {
 
@@ -268,11 +291,18 @@ class WorkflowEngine:
 
                 },
 
-                "execution": execution,
 
-                "agents": results
+                "execution": runtime.execution,
+
+
+                "agents": runtime.agent_results
 
             }
+
+
+            return self.output_formatter.format(
+                response
+            )
 
 
 
@@ -281,16 +311,16 @@ class WorkflowEngine:
 
             self.logger.error(
                 task_id,
-                str(error)
+                repr(error)
             )
 
 
-            return {
+            runtime.add_error(
+                repr(error)
+            )
 
-                "status": "failed",
 
-                "task_id": task_id,
-
-                "error": str(error)
-
-            }
+            return self.error_handler.handle(
+                task,
+                error
+            )

@@ -1,28 +1,24 @@
 import asyncio
 
-from task_queue import task_queue, AsyncWorker
+from task_queue.instance import task_queue
+
+from task_queue.concurrent_worker import (
+    ConcurrentWorker
+)
 
 from workflows.engine import WorkflowEngine
 
 
-async def run():
 
-    print(
-    "LN-NeU AI Worker started",
-    flush=True
-    )
+async def main():
 
     workflow = WorkflowEngine()
 
 
-    worker = AsyncWorker(
-        task_queue,
-        workflow
-    )
-
-    print(
-    "Worker listening...",
-    flush=True
+    worker = ConcurrentWorker(
+        queue=task_queue,
+        workflow=workflow,
+        workers=3
     )
 
 
@@ -32,4 +28,6 @@ async def run():
 
 if __name__ == "__main__":
 
-    asyncio.run(run())
+    asyncio.run(
+        main()
+    )

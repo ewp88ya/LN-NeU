@@ -1,53 +1,85 @@
 import json
+import time
 import redis
-
-from models.task import AITask
 
 
 class TaskQueue:
 
-    def __init__(self):
 
-        self.redis = redis.Redis(
-            host="ln-neu-redis",
-            port=6379,
+    def __init__(
+        self,
+        redis_url="redis://ln-neu-redis:6379",
+        queue_name="lnneu:tasks"
+    ):
+
+        self.redis = redis.Redis.from_url(
+            redis_url,
             decode_responses=True
         )
 
-        self.key = "lnneu:tasks"
+        self.queue_name = queue_name
 
 
-    def push(self, task):
 
-        data = task.model_dump()
+    def push(
+        self,
+        task
+    ):
+
+        payload = {
+
+            "task": task,
+
+            "created_at": time.time(),
+
+            "attempts": 0
+
+        }
+
 
         self.redis.rpush(
-            self.key,
-            json.dumps(data)
+            self.queue_name,
+            json.dumps(payload)
         )
 
 
-    def pop(self):
+        return True
 
-        result = self.redis.lpop(
-            self.key
+
+
+    def pop(
+        self
+    ):
+
+        item = self.redis.lpop(
+            self.queue_name
         )
 
 
-        if not result:
+        if not item:
+
             return None
 
 
-        data = json.loads(result)
-
-
-        return AITask(
-            **data
+        payload = json.loads(
+            item
         )
+
+
+        return payload["task"]
+
 
 
     def size(self):
 
         return self.redis.llen(
-            self.key
+            self.queue_name
+        )
+
+
+
+    def clear(self):
+
+        self.redis.delete(
+            self.queue_name
         )

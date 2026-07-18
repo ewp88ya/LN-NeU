@@ -1,24 +1,22 @@
+from agents.core.permission import AgentPermissionBoundary
+
+
 class AgentIsolation:
+
 
     def __init__(self):
 
-        self.permissions = {
-            "analysis-agent": [
-                "analysis"
-            ],
-            "network-agent": [
-                "network"
-            ],
-            "optimizer-agent": [
-                "optimization"
-            ]
-        }
+        self.boundary = AgentPermissionBoundary()
 
-    def validate(self, agent_name, task):
 
-        allowed = self.permissions.get(
+
+    def validate(
+        self,
+        agent_name,
+        task
+    ):
+
+        return self.boundary.can_execute(
             agent_name,
-            []
+            task.action
         )
-
-        return task.action in allowed

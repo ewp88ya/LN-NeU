@@ -1,17 +1,8 @@
 from agents.core.base_agent import BaseAgent
 
-from tools import ToolRuntime
-from tools import ToolSelector
-
-
 class NetworkAgent(BaseAgent):
 
     name = "network-agent"
-
-    def __init__(self):
-
-        self.runtime = ToolRuntime()
-        self.selector = ToolSelector()
 
     async def run(self, task):
 
