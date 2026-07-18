@@ -1,6 +1,8 @@
 import asyncio
 
 from task_queue.adapter import TaskAdapter
+from task_queue.retry import RetryPolicy
+from task_queue.dead_letter import DeadLetterQueue
 
 
 class ConcurrentWorker:
@@ -21,6 +23,10 @@ class ConcurrentWorker:
 
         self.adapter = TaskAdapter()
 
+        self.retry = RetryPolicy()
+
+        self.dead_letter = DeadLetterQueue()
+
         self.running = False
 
 
@@ -34,17 +40,13 @@ class ConcurrentWorker:
             f"Worker-{worker_id} started"
         )
 
-
         while self.running:
 
             payload = None
-            result = None
-
 
             try:
 
                 payload = self.queue.pop()
-
 
                 if payload is None:
 
@@ -55,23 +57,19 @@ class ConcurrentWorker:
                     continue
 
 
-
                 print(
-                    f"Worker-{worker_id} processing {payload.get('taskId')}"
+                    f"Worker-{worker_id} processing {payload['task']['taskId']}"
                 )
-
 
 
                 task = self.adapter.convert(
-                    payload
+                    payload["task"]
                 )
-
 
 
                 result = await self.workflow.execute(
                     task
                 )
-
 
 
                 print(
@@ -83,9 +81,43 @@ class ConcurrentWorker:
                 )
 
 
+                #
+                # Workflow gagal
+                #
+                if (
+                    isinstance(result, dict)
+                    and result.get("status") == "failed"
+                ):
+
+                    if self.retry.should_retry(
+                        payload
+                    ):
+
+                        payload = self.retry.increase_retry(
+                            payload
+                        )
+
+                        print(
+                            f"Worker-{worker_id} retry #{payload['retry_count']} -> {payload['task']['taskId']}"
+                        )
+
+                        self.queue.push(
+                            payload
+                        )
+
+                    else:
+
+                        self.dead_letter.push(
+                            payload,
+                            reason="retry_limit"
+                        )
+
+                        print(
+                            f"Worker-{worker_id} moved to DLQ -> {payload['task']['taskId']}"
+                        )
+
 
             except Exception as error:
-
 
                 print(
                     f"Worker-{worker_id} failed:"
@@ -96,19 +128,44 @@ class ConcurrentWorker:
                 )
 
 
-                if payload:
+                if payload is not None:
 
-                    print(
-                        "Failed payload:",
+                    if self.retry.should_retry(
                         payload
-                    )
+                    ):
+
+                        payload = self.retry.increase_retry(
+                            payload
+                        )
+
+                        print(
+                            f"Worker-{worker_id} exception retry #{payload['retry_count']} -> {payload['task']['taskId']}"
+                        )
+
+                        self.queue.push(
+                            payload
+                        )
+
+                    else:
+
+                        self.dead_letter.push(
+                            payload,
+                            reason=str(error)
+                        )
+
+                        print(
+                            f"Worker-{worker_id} exception moved to DLQ -> {payload['task']['taskId']}"
+                        )
+
+                        print(
+                            payload
+                        )
 
 
 
     async def start(self):
 
         self.running = True
-
 
         workers = []
 

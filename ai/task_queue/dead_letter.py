@@ -4,13 +4,13 @@ import time
 import redis
 
 
-class TaskQueue:
+class DeadLetterQueue:
 
 
     def __init__(
         self,
         redis_url="redis://localhost:6379",
-        queue_name="lnneu:tasks"
+        queue_name="lnneu:dead-letter"
     ):
 
         self.redis = redis.Redis.from_url(
@@ -24,43 +24,24 @@ class TaskQueue:
 
     def push(
         self,
-        task
+        payload,
+        reason="unknown"
     ):
 
-        #
-        # Jika payload queue lengkap dikirim ulang
-        # (retry/DLQ), simpan apa adanya.
-        #
-        if (
-            isinstance(task, dict)
-            and "task" in task
-        ):
+        record = {
 
-            payload = task
+            "payload": payload,
 
-        else:
+            "reason": reason,
 
-            payload = {
+            "failed_at": time.time()
 
-                "task": task,
-
-                "created_at": time.time(),
-
-                "retry_count": 0,
-
-                "attempts": 0,
-
-                "metadata": {}
-
-            }
-
+        }
 
         self.redis.rpush(
             self.queue_name,
-            json.dumps(payload)
+            json.dumps(record)
         )
-
-        return True
 
 
 
@@ -74,9 +55,7 @@ class TaskQueue:
 
             return None
 
-        return json.loads(
-            item
-        )
+        return json.loads(item)
 
 
 
