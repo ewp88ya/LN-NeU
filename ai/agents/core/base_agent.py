@@ -1,5 +1,11 @@
 from abc import ABC, abstractmethod
 
+from contracts.agent_contract import (
+    AgentTask,
+    AgentResult
+)
+
+
 
 class BaseAgent(ABC):
 
@@ -10,20 +16,16 @@ class BaseAgent(ABC):
 
     def get_memory(
         self,
-        task
+        task: AgentTask
     ):
 
-        return getattr(
-            task,
-            "context",
-            {}
-        )
+        return task.context or {}
 
 
 
     def get_shared_state(
         self,
-        task
+        task: AgentTask
     ):
 
         return getattr(
@@ -36,7 +38,7 @@ class BaseAgent(ABC):
 
     def save_state(
         self,
-        task,
+        task: AgentTask,
         key,
         value
     ):
@@ -54,10 +56,50 @@ class BaseAgent(ABC):
 
 
 
+    def success(
+        self,
+        output=None,
+        metadata=None
+    ):
+
+        return AgentResult(
+
+            agent=self.name,
+
+            status="completed",
+
+            output=output,
+
+            metadata=metadata or {}
+
+        )
+
+
+
+    def failed(
+        self,
+        error,
+        metadata=None
+    ):
+
+        return AgentResult(
+
+            agent=self.name,
+
+            status="failed",
+
+            error=str(error),
+
+            metadata=metadata or {}
+
+        )
+
+
+
     @abstractmethod
     async def run(
         self,
-        task
-    ):
+        task: AgentTask
+    ) -> AgentResult:
 
         pass

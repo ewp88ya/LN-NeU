@@ -1,86 +1,5 @@
 services:
 
-  ln-neu-core:
-    build:
-      context: ./backend
-    container_name: ln-neu-core
-    restart: always
-
-    ports:
-      - "8000:3000"
-
-    depends_on:
-      - postgres
-
-    environment:
-      DATABASE_URL: postgresql://lnneu:lnneu_password@postgres:5432/lnneu
-
-
-
-  ln-neu-ai:
-    build:
-      context: ./ai
-
-    container_name: ln-neu-ai
-
-    restart: always
-
-    ports:
-      - "8100:8000"
-
-    depends_on:
-      - redis
-
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-    environment:
-      ENVIRONMENT: production
-      REDIS_URL: redis://redis:6379
-      OLLAMA_URL: http://host.docker.internal:11434/api/generate
-      OLLAMA_MODEL: qwen2.5:7b
-
-
-
-  ln-neu-ai-worker:
-    build:
-      context: ./ai
-
-    container_name: ln-neu-ai-worker
-
-    restart: always
-
-    command:
-      - python
-      - -m
-      - task_queue.runner
-
-    depends_on:
-      - redis
-
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-    environment:
-      ENVIRONMENT: production
-      REDIS_URL: redis://redis:6379
-      OLLAMA_URL: http://host.docker.internal:11434/api/generate
-      OLLAMA_MODEL: qwen2.5:7b
-
-
-
-  redis:
-    image: redis:7
-
-    container_name: ln-neu-redis
-
-    restart: always
-
-    ports:
-      - "6379:6379"
-
-
-
   postgres:
     image: postgres:16
 
@@ -99,7 +18,121 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lnneu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+
+  redis:
+    image: redis:7
+
+    container_name: ln-neu-redis
+
+    restart: always
+
+    ports:
+      - "6379:6379"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+
+  ollama:
+    image: ollama/ollama:latest
+
+    container_name: ln-neu-ollama
+
+    restart: always
+
+    ports:
+      - "11434:11434"
+
+    volumes:
+      - ollama_data:/root/.ollama
+
+
+
+  ln-neu-core:
+    build:
+      context: ./backend
+
+    container_name: ln-neu-core
+
+    restart: always
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      DATABASE_URL: postgresql://lnneu:lnneu_password@postgres:5432/lnneu
+
+    ports:
+      - "8000:3000"
+
+
+
+  ln-neu-ai:
+    build:
+      context: ./ai
+
+    container_name: ln-neu-ai
+
+    restart: always
+
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+
+    environment:
+      ENVIRONMENT: production
+      REDIS_URL: redis://redis:6379
+      OLLAMA_URL: http://ollama:11434/api/generate
+      OLLAMA_MODEL: qwen2.5:7b
+
+    ports:
+      - "8100:8000"
+
+
+
+  ln-neu-ai-worker:
+    build:
+      context: ./ai
+
+    container_name: ln-neu-ai-worker
+
+    restart: always
+
+    command:
+      - python
+      - -m
+      - task_queue.runner
+
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+
+    environment:
+      ENVIRONMENT: production
+      REDIS_URL: redis://redis:6379
+      OLLAMA_URL: http://ollama:11434/api/generate
+      OLLAMA_MODEL: qwen2.5:7b
+
 
 
 volumes:
+
   postgres_data:
+
+  ollama_data:
