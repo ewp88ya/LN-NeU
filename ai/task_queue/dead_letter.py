@@ -1,6 +1,4 @@
 import json
-import time
-
 import redis
 
 
@@ -9,66 +7,45 @@ class DeadLetterQueue:
 
     def __init__(
         self,
-        redis_url="redis://localhost:6379",
-        queue_name="lnneu:dead-letter"
+        url="redis://redis:6379"
     ):
 
         self.redis = redis.Redis.from_url(
-            redis_url,
+            url,
             decode_responses=True
         )
 
-        self.queue_name = queue_name
+        self.queue_name = "ln-neu-dead-letter"
 
 
 
     def push(
         self,
         payload,
-        reason="unknown"
+        reason
     ):
 
-        record = {
+        data = {
 
             "payload": payload,
 
-            "reason": reason,
-
-            "failed_at": time.time()
+            "reason": reason
 
         }
 
+
         self.redis.rpush(
+
             self.queue_name,
-            json.dumps(record)
+
+            json.dumps(data)
+
         )
-
-
-
-    def pop(self):
-
-        item = self.redis.lpop(
-            self.queue_name
-        )
-
-        if item is None:
-
-            return None
-
-        return json.loads(item)
 
 
 
     def size(self):
 
         return self.redis.llen(
-            self.queue_name
-        )
-
-
-
-    def clear(self):
-
-        self.redis.delete(
             self.queue_name
         )

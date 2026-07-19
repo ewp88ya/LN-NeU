@@ -1,6 +1,4 @@
 import json
-import time
-
 import redis
 
 
@@ -9,16 +7,21 @@ class TaskQueue:
 
     def __init__(
         self,
-        redis_url="redis://localhost:6379",
-        queue_name="lnneu:tasks"
+        url="redis://redis:6379",
+        redis_url=None
     ):
 
+        if redis_url:
+            url = redis_url
+
+
         self.redis = redis.Redis.from_url(
-            redis_url,
+            url,
             decode_responses=True
         )
 
-        self.queue_name = queue_name
+
+        self.queue_name = "ln-neu-task-queue"
 
 
 
@@ -27,69 +30,80 @@ class TaskQueue:
         task
     ):
 
-        #
-        # Jika payload queue lengkap dikirim ulang
-        # (retry/DLQ), simpan apa adanya.
-        #
+        # payload retry dari worker
         if (
             isinstance(task, dict)
             and "task" in task
+            and "retry_count" in task
         ):
 
             payload = task
 
+
         else:
+
+            if hasattr(task, "model_dump"):
+
+                task_payload = task.model_dump()
+
+
+            elif isinstance(task, dict):
+
+                task_payload = task
+
+
+            else:
+
+                task_payload = task.__dict__
+
+
 
             payload = {
 
-                "task": task,
+                "task": task_payload,
 
-                "created_at": time.time(),
-
-                "retry_count": 0,
-
-                "attempts": 0,
-
-                "metadata": {}
+                "retry_count": 0
 
             }
 
 
-        self.redis.rpush(
+
+        self.redis.lpush(
+
             self.queue_name,
+
             json.dumps(payload)
+
         )
 
-        return True
 
 
+    def pop(
+        self
+    ):
 
-    def pop(self):
+        item = self.redis.rpop(
 
-        item = self.redis.lpop(
             self.queue_name
-        )
 
-        if item is None:
-
-            return None
-
-        return json.loads(
-            item
         )
 
 
+        if item:
 
-    def size(self):
+            return json.loads(item)
+
+
+        return None
+
+
+
+    def size(
+        self
+    ):
 
         return self.redis.llen(
+
             self.queue_name
-        )
 
-
-
-    def clear(self):
-
-        self.redis.delete(
-            self.queue_name
         )

@@ -35,7 +35,6 @@ class WorkflowEngine:
 
     def __init__(self):
 
-
         # =========================
         # Memory Layer
         # =========================
@@ -60,13 +59,11 @@ class WorkflowEngine:
         self.agent_isolation = AgentIsolation()
 
 
-
         # =========================
         # Planner Layer
         # =========================
 
         self.planner = PlannerAgent()
-
 
 
         # =========================
@@ -76,13 +73,11 @@ class WorkflowEngine:
         self.logger = AILogger()
 
 
-
         # =========================
         # Processing Layer
         # =========================
 
         self.processor = ProcessingPipeline()
-
 
         self.input_stage = InputStage(
             self.processor,
@@ -91,11 +86,9 @@ class WorkflowEngine:
             self.memory
         )
 
-
         self.output_formatter = OutputFormatter()
 
         self.error_handler = ErrorHandler()
-
 
 
         # =========================
@@ -105,7 +98,6 @@ class WorkflowEngine:
         self.tool_runtime = ToolRuntime()
 
         self.tool_selector = ToolSelector()
-
 
 
         # =========================
@@ -119,11 +111,9 @@ class WorkflowEngine:
             AnalysisAgent()
         )
 
-
         self.agent_manager.register_agent(
             NetworkAgent()
         )
-
 
         self.agent_manager.register_agent(
             OptimizerAgent()
@@ -137,16 +127,12 @@ class WorkflowEngine:
         agent=None
     ):
 
-
         task_id = task.taskId
 
-        runtime = TaskContext(
-            task
-        )
+        runtime = TaskContext(task)
 
 
         try:
-
 
             # =========================
             # Input Stage
@@ -156,9 +142,25 @@ class WorkflowEngine:
                 runtime
             )
 
-
             task = runtime.task
 
+
+            # =========================
+            # Memory Context Injection
+            # =========================
+
+            memory_context = self.memory_retrieval.retrieve(
+                task
+            )
+
+
+            task.context = {
+
+                "memory": memory_context,
+
+                "task_id": task_id
+
+            }
 
 
             # =========================
@@ -171,7 +173,6 @@ class WorkflowEngine:
             )
 
 
-
             # =========================
             # Planner
             # =========================
@@ -179,7 +180,6 @@ class WorkflowEngine:
             runtime.plan = self.planner.create_plan(
                 task
             )
-
 
             task.plan = runtime.plan
 
@@ -197,7 +197,6 @@ class WorkflowEngine:
                     task
                 ):
 
-
                     runtime.add_agent_result(
                         {
                             "agent": agent_name,
@@ -211,7 +210,6 @@ class WorkflowEngine:
 
 
                 try:
-
 
                     result = await self.agent_manager.execute(
                         agent_name,
@@ -241,7 +239,7 @@ class WorkflowEngine:
 
 
             # =========================
-            # Persistent Memory
+            # Persistent Memory Save
             # =========================
 
             self.persistent.store(
@@ -250,7 +248,6 @@ class WorkflowEngine:
                 task.input,
                 runtime.agent_results
             )
-
 
 
             # =========================
@@ -263,9 +260,7 @@ class WorkflowEngine:
             )
 
 
-
             response = {
-
 
                 "status": "completed",
 
@@ -273,15 +268,9 @@ class WorkflowEngine:
 
                 "workflow": "planner-multi-agent",
 
-
                 "planner": runtime.plan.model_dump(),
 
-
-                "persistent": True,
-
-
                 "memory_context": True,
-
 
                 "security": {
 
@@ -291,9 +280,7 @@ class WorkflowEngine:
 
                 },
 
-
                 "execution": runtime.execution,
-
 
                 "agents": runtime.agent_results
 

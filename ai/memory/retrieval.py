@@ -1,64 +1,68 @@
 class MemoryRetrieval:
 
+
     def __init__(
         self,
-        manager
+        memory_manager
     ):
-        self.manager = manager
+
+        self.memory_manager = memory_manager
+
 
 
     def retrieve_context(
         self,
-        task_id: str,
-        query: str
+        task_id=None,
+        query=None
     ):
 
-        context = {
-            "short_term": None,
-            "conversation": [],
-            "long_term": [],
-            "persistent": []
+        context = []
+
+
+        try:
+
+            if self.memory_manager:
+
+                if hasattr(
+                    self.memory_manager,
+                    "search"
+                ):
+
+                    result = self.memory_manager.search(
+                        query
+                    )
+
+                    if result:
+
+                        context = result
+
+
+        except Exception:
+
+            context = []
+
+
+
+        return {
+
+            "task_id": task_id,
+
+            "query": query,
+
+            "context": context
+
         }
 
 
-        short_term = self.manager.get(
-            "short_term"
+
+    # compatibility
+    def retrieve(
+        self,
+        task_id=None,
+        query=None
+    ):
+
+        return self.retrieve_context(
+            task_id,
+            query
         )
-
-        if short_term:
-            context["short_term"] = (
-                short_term.retrieve(task_id)
-            )
-
-
-        conversation = self.manager.get(
-            "conversation"
-        )
-
-        if conversation:
-            context["conversation"] = (
-                conversation.retrieve(task_id)
-            )
-
-
-        long_term = self.manager.get(
-            "long_term"
-        )
-
-        if long_term:
-            context["long_term"] = (
-                long_term.search(query)
-            )
-
-
-        persistent = self.manager.get(
-            "persistent"
-        )
-
-        if persistent:
-            context["persistent"] = (
-                persistent.retrieve(query)
-            )
-
-
-        return context
