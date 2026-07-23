@@ -19,7 +19,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lnneu"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U lnneu"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +41,12 @@ services:
       - "6379:6379"
 
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -88,16 +97,24 @@ services:
     restart: always
 
     depends_on:
+
       redis:
         condition: service_healthy
+
       ollama:
         condition: service_started
 
+
     environment:
+
       ENVIRONMENT: production
+
       REDIS_URL: redis://redis:6379
+
       OLLAMA_URL: http://ollama:11434/api/generate
+
       OLLAMA_MODEL: qwen2.5:7b
+
 
     ports:
       - "8100:8000"
@@ -117,16 +134,24 @@ services:
       - -m
       - task_queue.runner
 
+
     depends_on:
+
       redis:
         condition: service_healthy
+
       ollama:
         condition: service_started
 
+
     environment:
+
       ENVIRONMENT: production
+
       REDIS_URL: redis://redis:6379
+
       OLLAMA_URL: http://ollama:11434/api/generate
+
       OLLAMA_MODEL: qwen2.5:7b
 
 
