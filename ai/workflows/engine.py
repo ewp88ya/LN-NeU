@@ -32,7 +32,6 @@ from agents.modules.optimizer_agent import OptimizerAgent
 
 class WorkflowEngine:
 
-
     def __init__(self):
 
         # =========================
@@ -92,7 +91,7 @@ class WorkflowEngine:
 
 
         # =========================
-        # Tool Runtime
+        # Tool Runtime Layer
         # =========================
 
         self.tool_runtime = ToolRuntime()
@@ -100,8 +99,9 @@ class WorkflowEngine:
         self.tool_selector = ToolSelector()
 
 
+
         # =========================
-        # Agent Runtime
+        # Agent Runtime Layer
         # =========================
 
         self.agent_manager = AgentManager()
@@ -111,9 +111,14 @@ class WorkflowEngine:
             AnalysisAgent()
         )
 
+
         self.agent_manager.register_agent(
-            NetworkAgent()
+            NetworkAgent(
+                selector=self.tool_selector,
+                runtime=self.tool_runtime
+            )
         )
+
 
         self.agent_manager.register_agent(
             OptimizerAgent()
@@ -134,10 +139,6 @@ class WorkflowEngine:
 
         try:
 
-            # =========================
-            # Input Stage
-            # =========================
-
             runtime = self.input_stage.run(
                 runtime
             )
@@ -145,9 +146,7 @@ class WorkflowEngine:
             task = runtime.task
 
 
-            # =========================
             # Memory Context Injection
-            # =========================
 
             memory_context = self.memory_retrieval.retrieve(
                 task
@@ -163,9 +162,6 @@ class WorkflowEngine:
             }
 
 
-            # =========================
-            # Logging
-            # =========================
 
             log = self.logger.start(
                 task_id,
@@ -173,9 +169,8 @@ class WorkflowEngine:
             )
 
 
-            # =========================
+
             # Planner
-            # =========================
 
             runtime.plan = self.planner.create_plan(
                 task
@@ -185,9 +180,7 @@ class WorkflowEngine:
 
 
 
-            # =========================
             # Agent Execution
-            # =========================
 
             for agent_name in runtime.plan.agents:
 
@@ -226,7 +219,6 @@ class WorkflowEngine:
 
                 except Exception as agent_error:
 
-
                     runtime.add_agent_result(
                         {
                             "agent": agent_name,
@@ -238,9 +230,7 @@ class WorkflowEngine:
 
 
 
-            # =========================
-            # Persistent Memory Save
-            # =========================
+            # Persistent Memory
 
             self.persistent.store(
                 task_id,
@@ -250,9 +240,6 @@ class WorkflowEngine:
             )
 
 
-            # =========================
-            # Finish Logging
-            # =========================
 
             runtime.execution = self.logger.finish(
                 log,

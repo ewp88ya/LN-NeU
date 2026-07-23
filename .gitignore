@@ -64,3 +64,5 @@ docs/private/
 
 
 /src/generated/prisma
+.venv/
+*.backup

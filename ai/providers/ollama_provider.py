@@ -5,7 +5,11 @@ import httpx
 class OllamaProvider:
 
     def __init__(self):
-        self.url = settings.OLLAMA_URL
+        self.url = settings.OLLAMA_URL.replace(
+            "/api/generate",
+            "/api/chat"
+        )
+
         self.model = settings.OLLAMA_MODEL
 
 
@@ -13,14 +17,23 @@ class OllamaProvider:
 
         payload = {
             "model": self.model,
-            "prompt": prompt,
+
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+
             "stream": False,
+
             "options": {
                 "num_ctx": 2048,
                 "temperature": 0.7,
                 "num_predict": 512
             }
         }
+
 
         print("=" * 60)
         print("LN-NeU Ollama Provider")
@@ -30,6 +43,7 @@ class OllamaProvider:
         print("MAX TOKENS   :", 512)
         print("PROMPT LEN   :", len(prompt))
         print("=" * 60)
+
 
         try:
 
@@ -47,7 +61,9 @@ class OllamaProvider:
                 print("Response received.")
                 print("HTTP Status:", response.status_code)
 
+
             response.raise_for_status()
+
 
         except httpx.ConnectError as e:
 
@@ -60,15 +76,13 @@ class OllamaProvider:
         except httpx.RemoteProtocolError as e:
 
             print("Ollama disconnected during generation.")
-            print("Possible causes:")
-            print("- insufficient RAM")
-            print("- model crash")
-            print("- context too large")
+            print(e)
 
             raise
 
 
         data = response.json()
+
 
         print("Response parsed successfully.")
         print("=" * 60)
@@ -78,7 +92,10 @@ class OllamaProvider:
             "provider": "ollama",
             "model": self.model,
             "response": data.get(
-                "response",
+                "message",
+                {}
+            ).get(
+                "content",
                 ""
             )
         }
