@@ -13,6 +13,9 @@ from .document_loader import DocumentLoader
 from .chunker import TextChunker
 from .embedding import EmbeddingPreparation
 
+from .normalizer import DataNormalizer
+from .chunker import TextChunker
+
 __all__ = [
     "DataParser",
     "DataValidator",

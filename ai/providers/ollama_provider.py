@@ -1,10 +1,15 @@
 from config.settings import settings
+
 import httpx
+import time
+from datetime import datetime
 
 
 class OllamaProvider:
 
+
     def __init__(self):
+
         self.url = settings.OLLAMA_URL.replace(
             "/api/generate",
             "/api/chat"
@@ -12,94 +17,152 @@ class OllamaProvider:
 
         self.model = settings.OLLAMA_MODEL
 
-        print("=" * 60)
-        print("CONFIG URL :", settings.OLLAMA_URL)
-        print("FINAL URL  :", self.url)
-        print("=" * 60)
 
-    async def generate(self, prompt: str):
+    async def generate(
+        self,
+        prompt: str,
+        context=None
+    ):
+
+
+        start_time = time.time()
+
 
         payload = {
+
             "model": self.model,
 
             "messages": [
+
+                {
+                    "role": "system",
+                    "content":
+                    "You are LN-NeU AI Core Engine."
+                },
+
                 {
                     "role": "user",
                     "content": prompt
                 }
+
             ],
 
             "stream": False,
 
             "options": {
-                "num_ctx": 2048,
+
+                "num_ctx": 4096,
+
                 "temperature": 0.7,
-                "num_predict": 512
+
+                "num_predict": 1024
+
             }
+
         }
 
 
-        print("=" * 60)
-        print("LN-NeU Ollama Provider")
-        print("URL          :", self.url)
-        print("MODEL        :", self.model)
-        print("CONTEXT      :", 2048)
-        print("MAX TOKENS   :", 512)
-        print("PROMPT LEN   :", len(prompt))
-        print("=" * 60)
+
+        if context:
+
+            payload["messages"].insert(
+
+                1,
+
+                {
+
+                    "role":"system",
+
+                    "content":
+                    f"Context:\n{context}"
+
+                }
+
+            )
 
 
-        try:
 
-            async with httpx.AsyncClient(
-                timeout=180.0
-            ) as client:
+        async with httpx.AsyncClient(
 
-                print("Sending request to Ollama...")
+            timeout=180.0
 
-                response = await client.post(
-                    self.url,
-                    json=payload
-                )
-
-                print("Response received.")
-                print("HTTP Status:", response.status_code)
+        ) as client:
 
 
-            response.raise_for_status()
+            response = await client.post(
+
+                self.url,
+
+                json=payload
+
+            )
 
 
-        except httpx.ConnectError as e:
+        response.raise_for_status()
 
-            print("Ollama connection failed:")
-            print(e)
-
-            raise
-
-
-        except httpx.RemoteProtocolError as e:
-
-            print("Ollama disconnected during generation.")
-            print(e)
-
-            raise
 
 
         data = response.json()
 
 
-        print("Response parsed successfully.")
-        print("=" * 60)
+
+        latency = (
+            time.time()
+            -
+            start_time
+        )
+
+
+
+        content = data.get(
+
+            "message",
+
+            {}
+
+        ).get(
+
+            "content",
+
+            ""
+
+        )
+
 
 
         return {
-            "provider": "ollama",
-            "model": self.model,
-            "response": data.get(
-                "message",
-                {}
-            ).get(
-                "content",
-                ""
-            )
+
+
+            "provider":
+            "ollama",
+
+
+            "model":
+            self.model,
+
+
+            "response":
+            content,
+
+
+            "metadata":{
+
+
+                "timestamp":
+                datetime.utcnow().isoformat(),
+
+
+                "latency":
+                latency,
+
+
+                "context_size":
+                4096,
+
+
+                "tokens":
+                len(content.split())
+
+            }
+
         }

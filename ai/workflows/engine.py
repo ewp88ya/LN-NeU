@@ -2,10 +2,25 @@ from memory.context import MemoryContext
 from memory.persistent import PersistentMemory
 from memory import create_memory_manager
 from memory import MemoryRetrieval
+from tools.http_tool import HTTPTool
 
-from security import PromptGuard, AgentIsolation
+from security import (
+    PromptGuard,
+    AgentIsolation,
+)
+
+from security.middleware import SecurityMiddleware
+
+
 from planners.planner import PlannerAgent
+
+
 from observability.logger import AILogger
+from observability.metrics import MetricsCollector
+from observability.audit import AuditLogger
+from observability.tracing import TraceManager
+from observability.health import HealthMonitor
+
 
 from processing import (
     ProcessingPipeline,
@@ -19,19 +34,36 @@ from processing.middleware import (
     ErrorHandler,
 )
 
-from tools import ToolRuntime
-from tools import ToolSelector
-from tools.network_tool import PingTool
+from tools import (
+    ToolRuntime,
+    ToolSelector,
+)
+
+from tools.network_tool import (
+    PingTool,
+)
+
+from tools.dns_tool import (
+    DNSTool,
+)
+
+from tools.http_tool import (
+    HTTPTool,
+)
 
 from agents.core.manager import AgentManager
+
 from agents.modules.analysis_agent import AnalysisAgent
 from agents.modules.network_agent import NetworkAgent
 from agents.modules.optimizer_agent import OptimizerAgent
 
 
+
 class WorkflowEngine:
 
+
     def __init__(self):
+
 
         # =========================
         # Memory Layer
@@ -48,6 +80,7 @@ class WorkflowEngine:
         )
 
 
+
         # =========================
         # Security Layer
         # =========================
@@ -56,12 +89,18 @@ class WorkflowEngine:
 
         self.agent_isolation = AgentIsolation()
 
+        self.security = SecurityMiddleware()
+
+        self.security_audit = self.security.audit
+
+
 
         # =========================
-        # Planner Layer
+        # Planner
         # =========================
 
         self.planner = PlannerAgent()
+
 
 
         # =========================
@@ -70,12 +109,22 @@ class WorkflowEngine:
 
         self.logger = AILogger()
 
+        self.metrics = MetricsCollector()
+
+        self.audit = AuditLogger()
+
+        self.tracer = TraceManager()
+
+        self.health = HealthMonitor()
+
+
 
         # =========================
-        # Processing Layer
+        # Processing
         # =========================
 
         self.processor = ProcessingPipeline()
+
 
         self.input_stage = InputStage(
             self.processor,
@@ -84,26 +133,45 @@ class WorkflowEngine:
             self.memory
         )
 
+
         self.output_formatter = OutputFormatter()
 
         self.error_handler = ErrorHandler()
 
 
+
         # =========================
-        # Tool Runtime Layer
+        # Tool Runtime
         # =========================
 
-        self.tool_runtime = ToolRuntime()
+        self.tool_runtime = ToolRuntime(
+            metrics=self.metrics,
+            audit=self.audit
 
+        )
         self.tool_runtime.registry.register(
             "ping_server",
             PingTool()
         )
 
+
+        self.tool_runtime.registry.register(
+            "dns_lookup",
+            DNSTool()
+        )
+
+
+        self.tool_runtime.registry.register(
+            "http_check",
+            HTTPTool()
+        )
+
         self.tool_selector = ToolSelector()
 
+
+
         # =========================
-        # Agent Runtime Layer
+        # Agent Runtime
         # =========================
 
         self.agent_manager = AgentManager()
@@ -134,24 +202,73 @@ class WorkflowEngine:
         agent=None
     ):
 
+
         task_id = task.taskId
+
+
+        self.metrics.task_started()
+
+
+        self.audit.record(
+            "task_started",
+            {
+                "task_id": task_id,
+                "action": task.action
+            }
+        )
+
+
+        trace = self.tracer.start(
+            task_id,
+            task.action
+        )
+
 
         runtime = TaskContext(task)
 
 
+
         try:
+
+
+            # =========================
+            # Security Validation
+            # =========================
+
+            security_context = self.security.validate(
+                task
+            )
+
+
+            self.audit.record(
+                "security_validated",
+                {
+                    "task_id": task_id
+                }
+            )
+
+
+
+            # =========================
+            # Input Processing
+            # =========================
 
             runtime = self.input_stage.run(
                 runtime
             )
 
+
             task = runtime.task
 
 
-            # Memory Context Injection
 
-            memory_context = self.memory_retrieval.retrieve(
-                task
+            # =========================
+            # Memory Retrieval
+            # =========================
+
+            memory_context = self.memory_retrieval.retrieve_context(
+                task_id,
+                task.input
             )
 
 
@@ -165,20 +282,24 @@ class WorkflowEngine:
 
 
 
+            # =========================
+            # Planner
+            # =========================
+
             log = self.logger.start(
                 task_id,
                 task.action
             )
 
 
-
-            # Planner
-
             runtime.plan = self.planner.create_plan(
                 task
             )
 
+
             task.plan = runtime.plan
+
+
 
             # =========================
             # Agent Execution
@@ -186,10 +307,15 @@ class WorkflowEngine:
 
             for agent_name in runtime.plan.agents:
 
+
                 if not self.agent_isolation.validate(
                     agent_name,
                     task
                 ):
+
+
+                    self.metrics.agent_failed()
+
 
                     runtime.add_agent_result(
                         {
@@ -199,9 +325,23 @@ class WorkflowEngine:
                         }
                     )
 
+
                     continue
 
+
+
                 try:
+
+
+                    self.audit.record(
+                        "agent_execution_started",
+                        {
+                            "agent":agent_name,
+                            "task_id":task_id
+                        }
+                    )
+
+
 
                     result = await self.agent_manager.execute(
                         agent_name,
@@ -210,36 +350,55 @@ class WorkflowEngine:
                         self.tool_selector
                     )
 
-                    if hasattr(result, "model_dump"):
-                        agent_result = result.model_dump()
-                    else:
-                        agent_result = result
+
+
+                    if hasattr(
+                        result,
+                        "model_dump"
+                    ):
+
+                        result = result.model_dump()
+
+
 
                     runtime.add_agent_result(
-                        agent_result
+                        result
                     )
 
-                except Exception as agent_error:
 
-                    runtime.add_agent_result(
+                    self.metrics.agent_used()
+
+
+
+                    self.audit.record(
+                        "agent_execution_completed",
                         {
-                            "agent": agent_name,
-                            "status": "failed",
-                            "error": repr(agent_error),
-                            "error_type": type(agent_error).__name__
+                            "agent":agent_name,
+                            "task_id":task_id
                         }
                     )
 
+
+
+                except Exception as agent_error:
+
+
+                    self.metrics.agent_failed()
+
+
+                    runtime.add_agent_result(
+                        {
+                            "agent":agent_name,
+                            "status":"failed",
+                            "error":repr(agent_error)
+                        }
+                    )
+
+
+
+            # =========================
             # Persistent Memory
-            persistent_payload = {
-
-                "planner": runtime.plan.model_dump(),
-
-                "agents": runtime.agent_results,
-
-                "context": task.context
-
-            }
+            # =========================
 
             self.persistent.store(
 
@@ -249,9 +408,22 @@ class WorkflowEngine:
 
                 task.input,
 
-                persistent_payload
+                {
+
+                    "planner":
+                        runtime.plan.model_dump(),
+
+                    "agents":
+                        runtime.agent_results,
+
+                    "context":
+                        task.context
+
+                }
 
             )
+
+
 
             runtime.execution = self.logger.finish(
                 log,
@@ -259,49 +431,73 @@ class WorkflowEngine:
             )
 
 
+
+            execution_time = trace.finish()
+
+
+            self.metrics.task_completed(
+                execution_time
+            )
+
+
+
+            self.audit.record(
+                "task_completed",
+                {
+                    "task_id":task_id,
+                    "agents":len(
+                        runtime.agent_results
+                    )
+                }
+            )
+
+
+
             response = {
 
-                "status": "completed",
+                "status":"completed",
 
-                "task_id": task_id,
+                "task_id":task_id,
 
-                "workflow": "planner-multi-agent",
+                "workflow":
+                    "planner-multi-agent",
 
-                "planner": runtime.plan.model_dump(),
 
-                "memory_context": True,
+                "security":{
 
-                "security": {
-
-                    "prompt_guard": True,
-
-                    "agent_isolation": True
-
-                },
-
-                "execution": runtime.execution,
-
-                "tool_runtime": {
-
-                    "enabled": True,
-
-                    "results": [
-
-                        agent.get("output", {}).get("tool_result")
-
-                        for agent in runtime.agent_results
-
-                        if isinstance(agent, dict)
-                        and isinstance(agent.get("output"), dict)
-                        and "tool_result" in agent["output"]
-
-                    ]
+                    "authenticated":
+                        security_context.get(
+                            "authenticated",
+                            False
+                        )
 
                 },
 
-                "agents": runtime.agent_results
+
+                "planner":
+                    runtime.plan.model_dump(),
+
+
+                "execution":
+                    runtime.execution,
+
+
+                "tool_runtime":{
+
+                    "registered":
+                    list(
+                        self.tool_runtime.registry.tools.keys()
+                    )
+
+                },
+
+
+                "agents":
+                    runtime.agent_results
 
             }
+
+
 
             return self.output_formatter.format(
                 response
@@ -312,10 +508,30 @@ class WorkflowEngine:
         except Exception as error:
 
 
+            self.metrics.task_failed()
+
+
+            self.audit.record(
+                "task_failed",
+                {
+                    "task_id":task_id,
+                    "error":repr(error)
+                }
+            )
+
+
             self.logger.error(
                 task_id,
                 repr(error)
             )
+
+
+            try:
+                trace.finish()
+
+            except Exception:
+                pass
+
 
 
             runtime.add_error(

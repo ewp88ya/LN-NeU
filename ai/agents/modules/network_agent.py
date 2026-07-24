@@ -6,9 +6,12 @@ from contracts.agent_contract import (
 )
 
 
+
 class NetworkAgent(BaseAgent):
 
+
     name = "network-agent"
+
 
 
     def __init__(
@@ -39,6 +42,7 @@ class NetworkAgent(BaseAgent):
                 or self.runtime is None
             ):
 
+
                 return self.failed(
 
                     "Network runtime not configured",
@@ -60,7 +64,7 @@ class NetworkAgent(BaseAgent):
 
 
             #
-            # Dynamic Multiple Tool Selection
+            # Select Tools
             #
 
             tools = self.selector.select(
@@ -68,7 +72,9 @@ class NetworkAgent(BaseAgent):
             )
 
 
+
             if not tools:
+
 
                 return self.failed(
 
@@ -93,6 +99,7 @@ class NetworkAgent(BaseAgent):
                 dict
             ):
 
+
                 host = (
 
                     task.input.get("host")
@@ -105,7 +112,9 @@ class NetworkAgent(BaseAgent):
 
                 )
 
+
             else:
+
 
                 host = str(
                     task.input
@@ -114,12 +123,14 @@ class NetworkAgent(BaseAgent):
 
 
             #
-            # Execute Multiple Tools
+            # Execute Tools
+            #
+            # FIX:
+            # kirim tools list,
+            # bukan self.name
             #
 
             results = await self.runtime.execute_all(
-
-                self.name,
 
                 tools,
 
@@ -136,9 +147,13 @@ class NetworkAgent(BaseAgent):
                 "taskId",
 
                 getattr(
+
                     task,
+
                     "task_id",
+
                     None
+
                 )
 
             )
@@ -152,6 +167,7 @@ class NetworkAgent(BaseAgent):
                     "tool_results": results
 
                 },
+
 
                 metadata={
 
@@ -170,6 +186,7 @@ class NetworkAgent(BaseAgent):
         except Exception as error:
 
 
+
             task_id = getattr(
 
                 task,
@@ -177,9 +194,13 @@ class NetworkAgent(BaseAgent):
                 "taskId",
 
                 getattr(
+
                     task,
+
                     "task_id",
+
                     None
+
                 )
 
             )

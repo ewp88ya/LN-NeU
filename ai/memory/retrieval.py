@@ -1,3 +1,6 @@
+from memory.retrieval.retriever import MemoryRetriever
+
+
 class MemoryRetrieval:
 
 
@@ -6,76 +9,52 @@ class MemoryRetrieval:
         memory_manager
     ):
 
-        self.memory_manager = memory_manager
+        self.manager = memory_manager
+
+
+        vector_store = self.manager.get(
+            "vector"
+        )
+
+
+        self.retriever = MemoryRetriever(
+            vector_store
+        )
 
 
 
     def retrieve_context(
+
         self,
-        task=None,
-        task_id=None,
-        query=None
+
+        task_id,
+
+        query
+
     ):
 
-        context = []
 
+        return self.retriever.retrieve_context(
 
-        try:
+            task_id,
 
-            if task:
+            query
 
-                task_id = getattr(
-                    task,
-                    "taskId",
-                    None
-                )
-
-                query = getattr(
-                    task,
-                    "input",
-                    None
-                )
-
-
-            if self.memory_manager:
-
-                if hasattr(
-                    self.memory_manager,
-                    "search"
-                ):
-
-                    result = self.memory_manager.search(
-                        query
-                    )
-
-                    if result:
-
-                        context = result
-
-
-        except Exception:
-
-            context = []
-
-
-
-        return {
-
-            "task_id": task_id,
-
-            "query": query,
-
-            "context": context
-
-        }
+        )
 
 
 
     def retrieve(
+
         self,
-        task=None
+
+        task
+
     ):
 
-        return self.retrieve_context(
-            task=task
+
+        return self.retriever.retrieve(
+
+            task.input
+
         )

@@ -1,0 +1,2 @@
+LN-NeU is an AI core engine.
+It provides memory, agents, tools and workflow automation.

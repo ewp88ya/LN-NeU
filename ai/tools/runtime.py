@@ -1,62 +1,89 @@
 from tools.registry import ToolRegistry
-from tools.permission import ToolPermission
+
 
 
 class ToolRuntime:
 
 
-    def __init__(self):
+    def __init__(
+        self,
+        metrics=None,
+        audit=None
+    ):
+
 
         self.registry = ToolRegistry()
 
-        self.permission = ToolPermission()
+        self.metrics = metrics
 
-        self._register_default_tools()
-
-
-
-    def _register_default_tools(self):
-
-        from tools.network_tool import PingTool
-        from tools.dns_tool import DNSTool
-        from tools.http_tool import HTTPTool
+        self.audit = audit
 
 
-        self.registry.register(
-            "ping_server",
-            PingTool()
-        )
+
+    async def execute_all(
+        self,
+        tools,
+        *args,
+        **kwargs
+    ):
 
 
-        self.registry.register(
-            "dns_lookup",
-            DNSTool()
-        )
+        results = []
 
 
-        self.registry.register(
-            "http_check",
-            HTTPTool()
-        )
+
+        #
+        # Support:
+        #
+        # "ping_server"
+        #
+        # atau
+        #
+        # [
+        #   "ping_server",
+        #   "dns_lookup"
+        # ]
+        #
+
+        if isinstance(
+            tools,
+            str
+        ):
+
+            tools = [
+                tools
+            ]
+
+
+
+        for tool_name in tools:
+
+
+            result = await self.execute(
+                tool_name,
+                *args,
+                **kwargs
+            )
+
+
+            results.append(
+                result
+            )
+
+
+
+        return results
+
 
 
 
     async def execute(
         self,
-        agent_name,
         tool_name,
+        *args,
         **kwargs
     ):
 
-
-        if not self.permission.allowed(
-            agent_name,
-            tool_name
-        ):
-
-            raise PermissionError(
-                f"{agent_name} cannot use {tool_name}"
-            )
 
 
         tool = self.registry.get(
@@ -64,58 +91,147 @@ class ToolRuntime:
         )
 
 
-        if tool is None:
+
+        if not tool:
+
 
             raise ValueError(
-                f"Tool {tool_name} not found"
+                f"Tool '{tool_name}' not found"
             )
 
 
-        return await tool.execute(
-            **kwargs
-        )
+
+        #
+        # Metrics
+        #
+
+        if self.metrics:
+
+
+            self.metrics.tool_used()
 
 
 
-    async def execute_all(
-        self,
-        agent_name,
-        tools,
-        **kwargs
-    ):
+        #
+        # Audit Start
+        #
 
-        results = []
+        if self.audit:
 
 
-        for tool_name in tools:
+            self.audit.record(
 
-            try:
+                "tool_execution_started",
 
-                result = await self.execute(
-                    agent_name,
-                    tool_name,
-                    **kwargs
-                )
+                {
+
+                    "tool": tool_name
+
+                }
+
+            )
 
 
-                results.append(
+
+        try:
+
+
+
+            result = await tool.execute(
+                *args,
+                **kwargs
+            )
+
+
+
+            #
+            # Audit Success
+            #
+
+            if self.audit:
+
+
+                self.audit.record(
+
+                    "tool_execution_completed",
+
                     {
+
                         "tool": tool_name,
-                        "status": "success",
-                        "result": result
+
+                        "status": "success"
+
                     }
+
                 )
 
 
-            except Exception as error:
 
-                results.append(
+            return {
+
+
+                "status": "success",
+
+
+                "tool": tool_name,
+
+
+                "result": result
+
+
+            }
+
+
+
+
+        except Exception as error:
+
+
+
+            #
+            # Metrics Failed
+            #
+
+            if self.metrics:
+
+
+                self.metrics.tool_failed()
+
+
+
+            #
+            # Audit Failed
+            #
+
+            if self.audit:
+
+
+                self.audit.record(
+
+                    "tool_execution_failed",
+
                     {
+
                         "tool": tool_name,
-                        "status": "failed",
-                        "error": str(error)
+
+                        "error": repr(error)
+
                     }
+
                 )
 
 
-        return results
+
+            return {
+
+
+                "status": "failed",
+
+
+                "tool": tool_name,
+
+
+                "error": repr(error)
+
+
+            }
