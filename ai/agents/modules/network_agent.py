@@ -2,7 +2,7 @@ from agents.core.base_agent import BaseAgent
 
 from contracts.agent_contract import (
     AgentTask,
-    AgentResult
+    AgentResult,
 )
 
 
@@ -14,68 +14,187 @@ class NetworkAgent(BaseAgent):
     def __init__(
         self,
         selector=None,
-        runtime=None
+        runtime=None,
     ):
+
+        super().__init__()
+
         self.selector = selector
+
         self.runtime = runtime
+
 
 
     async def run(
         self,
-        task: AgentTask
+        task: AgentTask,
     ) -> AgentResult:
+
 
         try:
 
-            if self.selector is None or self.runtime is None:
+
+            if (
+                self.selector is None
+                or self.runtime is None
+            ):
+
                 return self.failed(
+
                     "Network runtime not configured",
+
                     metadata={
-                        "task_id": getattr(task, "task_id", None),
+
+                        "task_id": getattr(
+                            task,
+                            "taskId",
+                            None
+                        ),
+
                         "agent": self.name
+
                     }
+
                 )
 
 
-            tool_name = self.selector.select(task)
 
+            #
+            # Dynamic Multiple Tool Selection
+            #
 
-            if isinstance(task.input, dict):
-                host = (
-                    task.input.get("host")
-                    or task.input.get("message")
-                    or task.input.get("text")
-                    or str(task.input)
-                )
-            else:
-                host = str(task.input)
-
-
-            result = await self.runtime.execute(
-                self.name,
-                tool_name,
-                host=host
+            tools = self.selector.select(
+                task
             )
+
+
+            if not tools:
+
+                return self.failed(
+
+                    "No tools selected",
+
+                    metadata={
+
+                        "agent": self.name
+
+                    }
+
+                )
+
+
+
+            #
+            # Normalize Input
+            #
+
+            if isinstance(
+                task.input,
+                dict
+            ):
+
+                host = (
+
+                    task.input.get("host")
+
+                    or task.input.get("text")
+
+                    or task.input.get("message")
+
+                    or "google.com"
+
+                )
+
+            else:
+
+                host = str(
+                    task.input
+                )
+
+
+
+            #
+            # Execute Multiple Tools
+            #
+
+            results = await self.runtime.execute_all(
+
+                self.name,
+
+                tools,
+
+                host=host
+
+            )
+
+
+
+            task_id = getattr(
+
+                task,
+
+                "taskId",
+
+                getattr(
+                    task,
+                    "task_id",
+                    None
+                )
+
+            )
+
 
 
             return self.success(
+
                 output={
-                    "tool": tool_name,
-                    "result": result
+
+                    "tool_results": results
+
                 },
+
                 metadata={
-                    "task_id": task.task_id,
-                    "agent": self.name
+
+                    "task_id": task_id,
+
+                    "agent": self.name,
+
+                    "tools": tools
+
                 }
+
             )
+
 
 
         except Exception as error:
 
+
+            task_id = getattr(
+
+                task,
+
+                "taskId",
+
+                getattr(
+                    task,
+                    "task_id",
+                    None
+                )
+
+            )
+
+
             return self.failed(
+
                 error,
+
                 metadata={
-                    "task_id": getattr(task, "task_id", None),
+
+                    "task_id": task_id,
+
                     "agent": self.name
+
                 }
+
             )

@@ -1,6 +1,5 @@
 from tools.registry import ToolRegistry
 from tools.permission import ToolPermission
-from tools.contract import ToolResult
 
 
 class ToolRuntime:
@@ -12,18 +11,41 @@ class ToolRuntime:
 
         self.permission = ToolPermission()
 
+        self._register_default_tools()
+
+
+
+    def _register_default_tools(self):
+
+        from tools.network_tool import PingTool
+        from tools.dns_tool import DNSTool
+        from tools.http_tool import HTTPTool
+
+
+        self.registry.register(
+            "ping_server",
+            PingTool()
+        )
+
+
+        self.registry.register(
+            "dns_lookup",
+            DNSTool()
+        )
+
+
+        self.registry.register(
+            "http_check",
+            HTTPTool()
+        )
+
 
 
     async def execute(
-
         self,
-
         agent_name,
-
         tool_name,
-
         **kwargs
-
     ):
 
 
@@ -32,12 +54,9 @@ class ToolRuntime:
             tool_name
         ):
 
-            return ToolResult(
-                tool=tool_name,
-                status="blocked",
-                error=f"{agent_name} cannot use {tool_name}"
+            raise PermissionError(
+                f"{agent_name} cannot use {tool_name}"
             )
-
 
 
         tool = self.registry.get(
@@ -47,41 +66,56 @@ class ToolRuntime:
 
         if tool is None:
 
-            return ToolResult(
-                tool=tool_name,
-                status="failed",
-                error="Tool not found"
+            raise ValueError(
+                f"Tool {tool_name} not found"
             )
 
 
-
-        try:
-
-            result = await tool.execute(
-                **kwargs
-            )
+        return await tool.execute(
+            **kwargs
+        )
 
 
-            return ToolResult(
 
-                tool=tool_name,
+    async def execute_all(
+        self,
+        agent_name,
+        tools,
+        **kwargs
+    ):
 
-                status="success",
-
-                output=result
-
-            )
-
-
-        except Exception as error:
+        results = []
 
 
-            return ToolResult(
+        for tool_name in tools:
 
-                tool=tool_name,
+            try:
 
-                status="failed",
+                result = await self.execute(
+                    agent_name,
+                    tool_name,
+                    **kwargs
+                )
 
-                error=str(error)
 
-            )
+                results.append(
+                    {
+                        "tool": tool_name,
+                        "status": "success",
+                        "result": result
+                    }
+                )
+
+
+            except Exception as error:
+
+                results.append(
+                    {
+                        "tool": tool_name,
+                        "status": "failed",
+                        "error": str(error)
+                    }
+                )
+
+
+        return results

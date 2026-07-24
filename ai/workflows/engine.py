@@ -4,9 +4,7 @@ from memory import create_memory_manager
 from memory import MemoryRetrieval
 
 from security import PromptGuard, AgentIsolation
-
 from planners.planner import PlannerAgent
-
 from observability.logger import AILogger
 
 from processing import (
@@ -23,6 +21,7 @@ from processing.middleware import (
 
 from tools import ToolRuntime
 from tools import ToolSelector
+from tools.network_tool import PingTool
 
 from agents.core.manager import AgentManager
 from agents.modules.analysis_agent import AnalysisAgent
@@ -96,9 +95,12 @@ class WorkflowEngine:
 
         self.tool_runtime = ToolRuntime()
 
+        self.tool_runtime.registry.register(
+            "ping_server",
+            PingTool()
+        )
+
         self.tool_selector = ToolSelector()
-
-
 
         # =========================
         # Agent Runtime Layer
@@ -178,12 +180,11 @@ class WorkflowEngine:
 
             task.plan = runtime.plan
 
-
-
+            # =========================
             # Agent Execution
+            # =========================
 
             for agent_name in runtime.plan.agents:
-
 
                 if not self.agent_isolation.validate(
                     agent_name,
@@ -200,8 +201,6 @@ class WorkflowEngine:
 
                     continue
 
-
-
                 try:
 
                     result = await self.agent_manager.execute(
@@ -211,11 +210,14 @@ class WorkflowEngine:
                         self.tool_selector
                     )
 
+                    if hasattr(result, "model_dump"):
+                        agent_result = result.model_dump()
+                    else:
+                        agent_result = result
 
                     runtime.add_agent_result(
-                        result
+                        agent_result
                     )
-
 
                 except Exception as agent_error:
 
@@ -228,18 +230,28 @@ class WorkflowEngine:
                         }
                     )
 
-
-
             # Persistent Memory
+            persistent_payload = {
+
+                "planner": runtime.plan.model_dump(),
+
+                "agents": runtime.agent_results,
+
+                "context": task.context
+
+            }
 
             self.persistent.store(
+
                 task_id,
+
                 task.action,
+
                 task.input,
-                runtime.agent_results
+
+                persistent_payload
+
             )
-
-
 
             runtime.execution = self.logger.finish(
                 log,
@@ -269,10 +281,27 @@ class WorkflowEngine:
 
                 "execution": runtime.execution,
 
+                "tool_runtime": {
+
+                    "enabled": True,
+
+                    "results": [
+
+                        agent.get("output", {}).get("tool_result")
+
+                        for agent in runtime.agent_results
+
+                        if isinstance(agent, dict)
+                        and isinstance(agent.get("output"), dict)
+                        and "tool_result" in agent["output"]
+
+                    ]
+
+                },
+
                 "agents": runtime.agent_results
 
             }
-
 
             return self.output_formatter.format(
                 response

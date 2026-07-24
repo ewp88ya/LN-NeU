@@ -2,17 +2,18 @@ from abc import ABC, abstractmethod
 
 from contracts.agent_contract import (
     AgentTask,
-    AgentResult
+    AgentResult,
 )
-
 
 
 class BaseAgent(ABC):
 
-
     name = "base-agent"
 
+    def __init__(self):
 
+        self.runtime = None
+        self.selector = None
 
     def get_memory(
         self,
@@ -20,8 +21,6 @@ class BaseAgent(ABC):
     ):
 
         return task.context or {}
-
-
 
     def get_shared_state(
         self,
@@ -34,8 +33,6 @@ class BaseAgent(ABC):
             None
         )
 
-
-
     def save_state(
         self,
         task: AgentTask,
@@ -43,9 +40,7 @@ class BaseAgent(ABC):
         value
     ):
 
-        state = self.get_shared_state(
-            task
-        )
+        state = self.get_shared_state(task)
 
         if state:
 
@@ -54,7 +49,33 @@ class BaseAgent(ABC):
                 value
             )
 
+    async def execute_tool(
+        self,
+        task: AgentTask,
+        **kwargs
+    ):
 
+        if self.runtime is None:
+
+            return None
+
+        if self.selector is None:
+
+            return None
+
+        tool = self.selector.select(
+            task
+        )
+
+        if tool is None:
+
+            return None
+
+        return await self.runtime.execute(
+            self.name,
+            tool,
+            **kwargs
+        )
 
     def success(
         self,
@@ -74,8 +95,6 @@ class BaseAgent(ABC):
 
         )
 
-
-
     def failed(
         self,
         error,
@@ -93,8 +112,6 @@ class BaseAgent(ABC):
             metadata=metadata or {}
 
         )
-
-
 
     @abstractmethod
     async def run(

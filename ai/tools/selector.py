@@ -9,17 +9,29 @@ class ToolSelector:
         action = task.action.lower()
 
 
-        mapping = {
+        if action in [
+            "network",
+            "analysis"
+        ]:
 
-            "analyze": "ping_server",
+            return [
 
-            "analysis": "ping_server",
+                "ping_server",
 
-            "network": "ping_server",
+                "dns_lookup",
 
-            "optimize": "ping_server"
+                "http_check"
 
-        }
+            ]
 
 
-        return mapping.get(action)
+        if action == "ping":
+
+            return [
+
+                "ping_server"
+
+            ]
+
+
+        return []
