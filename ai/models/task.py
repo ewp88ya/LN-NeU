@@ -1,6 +1,8 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Dict, Any
+from contracts.agent_contract import AgentTask
 
+AITask = AgentTask
 
 class AITask(BaseModel):
 

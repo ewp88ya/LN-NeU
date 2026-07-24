@@ -1,54 +1,59 @@
-from prompts.manager import PromptManager
-from providers.factory import get_provider
-from tools.registry import ToolRegistry
+from agents.modules.analysis_agent import AnalysisAgent
+from agents.modules.network_agent import NetworkAgent
+from agents.modules.optimizer_agent import OptimizerAgent
 
 
 class AgentExecutor:
 
+
     def __init__(self):
 
-        self.prompt = PromptManager()
-        self.model = get_provider()
-        self.tools = ToolRegistry()
+        self.agents = {
+            "analysis": AnalysisAgent(),
+            "network": NetworkAgent(),
+            "optimizer": OptimizerAgent(),
+        }
+
 
 
     async def execute(self, task):
 
-        tool_result = None
+        action = task.action.lower()
 
-        # contoh tool trigger
-        if "ping" in task.input.lower():
 
-            tool = self.tools.get("ping_server")
+        # normalize input
+        if isinstance(task.input, dict):
 
-            tool_result = await tool.run(
-                host="8.8.8.8"
+            text = (
+                task.input.get("message")
+                or task.input.get("text")
+                or str(task.input)
             )
 
+        else:
 
-        prompt = self.prompt.build(
-            task.action,
-            task.input
+            text = str(task.input)
+
+
+
+        text_lower = text.lower()
+
+
+
+        if action in self.agents:
+
+            agent = self.agents[action]
+
+        elif "ping" in text_lower:
+
+            agent = self.agents["network"]
+
+        else:
+
+            agent = self.agents["analysis"]
+
+
+
+        return await agent.run(
+            task
         )
-
-
-        if tool_result:
-
-            prompt += f"""
-
-Tool Result:
-{tool_result}
-"""
-
-
-        response = await self.model.generate(
-            prompt
-        )
-
-
-        return {
-            "taskId": task.taskId,
-            "agent": "analysis-agent",
-            "tool": tool_result,
-            "response": response
-        }

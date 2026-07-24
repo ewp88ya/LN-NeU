@@ -12,6 +12,7 @@ class MemoryRetrieval:
 
     def retrieve_context(
         self,
+        task=None,
         task_id=None,
         query=None
     ):
@@ -20,6 +21,21 @@ class MemoryRetrieval:
 
 
         try:
+
+            if task:
+
+                task_id = getattr(
+                    task,
+                    "taskId",
+                    None
+                )
+
+                query = getattr(
+                    task,
+                    "input",
+                    None
+                )
+
 
             if self.memory_manager:
 
@@ -55,14 +71,11 @@ class MemoryRetrieval:
 
 
 
-    # compatibility
     def retrieve(
         self,
-        task_id=None,
-        query=None
+        task=None
     ):
 
         return self.retrieve_context(
-            task_id,
-            query
+            task=task
         )

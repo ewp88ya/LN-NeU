@@ -1,29 +1,36 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Dict, Optional, List
 
 
-
 class AgentTask(BaseModel):
+
+    model_config = ConfigDict(
+        populate_by_name=True
+    )
 
     task_id: str = Field(
         alias="taskId"
     )
 
+    agent_id: Optional[str] = None
+
     action: str
 
-    input: str
+    input: Any
 
-    context: Dict[str, Any] = {}
+    context: Dict[str, Any] = Field(
+        default_factory=dict
+    )
 
-    metadata: Dict[str, Any] = {}
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict
+    )
 
+    memory: Optional[Dict[str, Any]] = None
 
+    plan: Optional[Any] = None
 
-    class Config:
-
-        populate_by_name = True
-
-
+    processed: Optional[Any] = None
 
 
 class AgentResult(BaseModel):
@@ -36,13 +43,15 @@ class AgentResult(BaseModel):
 
     error: Optional[str] = None
 
-    metadata: Dict[str, Any] = {}
-
-
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict
+    )
 
 
 class AgentExecution(BaseModel):
 
     task_id: str
 
-    results: List[AgentResult] = []
+    results: List[AgentResult] = Field(
+        default_factory=list
+    )

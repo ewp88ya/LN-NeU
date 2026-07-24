@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     )
 
     OLLAMA_URL: str = (
-        "http://ollama:11434/api/generate"
+        "http://127.0.0.1:11434/api/generate"
     )
 
     OLLAMA_MODEL: str = (

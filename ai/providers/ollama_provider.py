@@ -12,6 +12,10 @@ class OllamaProvider:
 
         self.model = settings.OLLAMA_MODEL
 
+        print("=" * 60)
+        print("CONFIG URL :", settings.OLLAMA_URL)
+        print("FINAL URL  :", self.url)
+        print("=" * 60)
 
     async def generate(self, prompt: str):
 

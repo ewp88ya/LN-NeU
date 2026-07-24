@@ -3,7 +3,8 @@ import asyncio
 from task_queue.adapter import TaskAdapter
 from task_queue.retry import RetryPolicy
 from task_queue.dead_letter import DeadLetterQueue
-
+from agents.executor import AgentExecutor
+from memory.manager import MemoryManager
 
 class ConcurrentWorker:
 
@@ -26,6 +27,10 @@ class ConcurrentWorker:
         self.retry = RetryPolicy()
 
         self.dead_letter = DeadLetterQueue()
+
+        self.agent = AgentExecutor()
+
+        self.memory = MemoryManager()
 
         self.running = False
 

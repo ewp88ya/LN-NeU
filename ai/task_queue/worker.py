@@ -1,8 +1,10 @@
 import asyncio
 
+from agents.executor import AgentExecutor
+from memory.manager import MemoryManager
+
 
 class AsyncWorker:
-
 
     def __init__(
         self,
@@ -12,8 +14,11 @@ class AsyncWorker:
 
         self.queue = queue
         self.workflow = workflow
-        self.running = False
 
+        self.agent = AgentExecutor()
+        self.memory = MemoryManager()
+
+        self.running = False
 
 
     async def start(self):
@@ -39,21 +44,34 @@ class AsyncWorker:
                     continue
 
 
-
                 print(
-                    f"Processing task: {task.taskId}",
+                    f"Processing task: {task.task_id}",
                     flush=True
                 )
 
 
-                result = await self.workflow.execute(
+                # Memory Context Injection
+                memory_context = {}
+
+                try:
+                    memory_context = self.memory.retrieve(
+                        "short_term",
+                        task.task_id
+                    )
+                except Exception:
+                    memory_context = {}
+
+                task.memory = memory_context
+
+                # Agent Execution
+                result = await self.agent.execute(
                     task
                 )
 
 
                 print(
                     "Task completed:",
-                    result.get("status"),
+                    result,
                     flush=True
                 )
 
