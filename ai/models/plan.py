@@ -1,6 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
-
+from pydantic import BaseModel
+from typing import List
 
 
 class PlanStep(BaseModel):
@@ -9,11 +8,9 @@ class PlanStep(BaseModel):
 
     agent: str
 
-    depends_on: List[int] = Field(
-        default_factory=list
-    )
+    depends_on: list[int] = []
 
-    action: Optional[str] = None
+    action: str | None = None
 
 
 
@@ -21,16 +18,12 @@ class AgentPlan(BaseModel):
 
     planner: str
 
-    goal: Optional[str] = None
+    goal: str
 
-    strategy: str = "sequential"
+    strategy: str
 
-    agents: List[str] = Field(
-        default_factory=list
-    )
+    agents: List[str]
 
-    steps: List[PlanStep] = Field(
-        default_factory=list
-    )
+    steps: List[PlanStep]
 
-    reasoning: Optional[str] = None
+    reasoning: str | None = None
