@@ -1,20 +1,35 @@
-from tools.network_tool import PingTool
-
-
 class ToolRegistry:
+
 
     def __init__(self):
 
-        self.tools = {
-            "ping_server": PingTool()
-        }
+        self.tools = {}
 
 
-    def get(self, name):
+
+    def register(
+        self,
+        name,
+        tool
+    ):
+
+        self.tools[name] = tool
+
+
+
+    def get(
+        self,
+        name
+    ):
 
         return self.tools.get(name)
 
 
-    def list(self):
 
-        return list(self.tools.keys())
+    def list_tools(
+        self
+    ):
+
+        return list(
+            self.tools.keys()
+        )
