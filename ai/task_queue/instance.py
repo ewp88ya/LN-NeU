@@ -1,13 +1,7 @@
 from task_queue.task_queue import TaskQueue
-import os
-
-
-REDIS_URL = os.getenv(
-    "REDIS_URL",
-    "redis://localhost:6379"
-)
+from config.settings import settings
 
 
 task_queue = TaskQueue(
-    redis_url=REDIS_URL
+    redis_url=settings.REDIS_URL
 )

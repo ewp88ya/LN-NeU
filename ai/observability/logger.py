@@ -1,138 +1,122 @@
-import time
-import uuid
+import logging
 import json
+import time
+import sys
 
 
-class AILogger:
+class StructuredFormatter(
+    logging.Formatter
+):
 
 
-    def __init__(self):
-
-        self.logs = []
-
-
-    def start(
+    def format(
         self,
-        task_id,
-        action
+        record
     ):
 
-        execution_id = str(
-            uuid.uuid4()
-        )
+        payload = {
 
-        log = {
+            "timestamp": time.time(),
 
-            "execution_id": execution_id,
+            "level": record.levelname,
 
-            "task_id": task_id,
-
-            "action": action,
-
-            "status": "started",
-
-            "started_at": time.time(),
-
-            "finished_at": None,
-
-            "duration": None,
-
-            "agents": []
-
-        }
-
-
-        self.logs.append(log)
-
-
-        return log
-
-
-
-    def add_agent(
-        self,
-        log,
-        agent,
-        result
-    ):
-
-        log["agents"].append(
-
-            {
-
-                "agent": agent,
-
-                "result": result,
-
-                "timestamp": time.time()
-
-            }
-
-        )
-
-
-
-    def finish(
-        self,
-        log,
-        results
-    ):
-
-        finished = time.time()
-
-
-        log["status"] = "completed"
-
-        log["finished_at"] = finished
-
-        log["duration"] = (
-
-            finished -
-            log["started_at"]
-
-        )
-
-
-        log["agents"] = results
-
-
-        return log
-
-
-
-    def error(
-        self,
-        task_id,
-        error
-    ):
-
-        log = {
-
-            "execution_id": str(
-                uuid.uuid4()
+            "service": getattr(
+                record,
+                "service",
+                "ln-neu-ai"
             ),
 
-            "task_id": task_id,
+            "event": getattr(
+                record,
+                "event",
+                None
+            ),
 
-            "status": "failed",
+            "message": record.getMessage(),
 
-            "error": str(error),
-
-            "timestamp": time.time()
+            "metadata": getattr(
+                record,
+                "metadata",
+                {}
+            )
 
         }
 
 
-        self.logs.append(log)
-
-
-        return log
-
-
-
-    def export(self):
-
         return json.dumps(
-            self.logs,
-            indent=2
+            payload
         )
+
+
+
+def get_logger(
+    name="ln-neu"
+):
+
+
+    logger = logging.getLogger(
+        name
+    )
+
+
+    if logger.handlers:
+
+        return logger
+
+
+
+    handler = logging.StreamHandler(
+        sys.stdout
+    )
+
+
+    handler.setFormatter(
+        StructuredFormatter()
+    )
+
+
+    logger.addHandler(
+        handler
+    )
+
+
+    logger.setLevel(
+        logging.INFO
+    )
+
+
+    return logger
+
+
+
+def log_event(
+    logger,
+    level,
+    message,
+    event=None,
+    service="ln-neu-ai",
+    metadata=None
+):
+
+
+    extra = {
+
+        "event": event,
+
+        "service": service,
+
+        "metadata": metadata or {}
+
+    }
+
+
+    log_function = getattr(
+        logger,
+        level.lower()
+    )
+
+
+    log_function(
+        message,
+        extra=extra
+    )

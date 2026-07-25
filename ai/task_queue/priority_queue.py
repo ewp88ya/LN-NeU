@@ -1,15 +1,22 @@
 import json
 import time
+import os
 import redis
 
 
 class PriorityQueue:
 
+
     PRIORITY_MAP = {
+
         "high": 1,
+
         "normal": 5,
+
         "low": 10
+
     }
+
 
 
     def __init__(
@@ -18,26 +25,34 @@ class PriorityQueue:
         redis_url=None
     ):
 
-        if redis_url:
-            url = redis_url
 
-        if url is None:
-            import os
+        url = (
 
-            url = os.getenv(
+            redis_url
+
+            or url
+
+            or os.getenv(
                 "REDIS_URL",
-                "redis://localhost:6379"
+                "redis://redis:6379"
             )
+
+        )
 
 
         self.redis = redis.Redis.from_url(
+
             url,
+
             decode_responses=True
+
         )
+
 
         self.queue_name = (
             "ln-neu-priority-queue"
         )
+
 
 
     def push(
@@ -46,61 +61,101 @@ class PriorityQueue:
         priority="normal"
     ):
 
-        score = (
-            self.PRIORITY_MAP
-            .get(priority, 5)
+
+        score = self.PRIORITY_MAP.get(
+
+            priority,
+
+            5
+
         )
+
 
         task = {
+
             "payload": payload,
+
             "priority": priority,
+
             "created_at": time.time()
+
         }
 
+
         self.redis.zadd(
+
             self.queue_name,
+
             {
-                json.dumps(task): score
+
+                json.dumps(task):
+
+                score
+
             }
+
         )
+
 
 
     def pop(self):
 
         items = self.redis.zrange(
+
             self.queue_name,
+
             0,
+
             0
+
         )
 
+
         if not items:
+
             return None
 
 
         item = items[0]
 
+
         self.redis.zrem(
+
             self.queue_name,
+
             item
+
         )
 
+
         return json.loads(item)
+
 
 
     def peek(self):
 
         items = self.redis.zrange(
+
             self.queue_name,
+
             0,
+
             0
+
         )
+
 
         if not items:
+
             return None
 
+
         return json.loads(
+
             items[0]
+
         )
+
 
 
     def clear(self):
@@ -108,6 +163,7 @@ class PriorityQueue:
         self.redis.delete(
             self.queue_name
         )
+
 
 
     def size(self):

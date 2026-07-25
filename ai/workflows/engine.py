@@ -14,8 +14,11 @@ from security.middleware import SecurityMiddleware
 
 from planners.planner import PlannerAgent
 
+from observability.logger import (
+    get_logger,
+    log_event
+)
 
-from observability.logger import AILogger
 from observability.metrics import MetricsCollector
 from observability.audit import AuditLogger
 from observability.tracing import TraceManager
@@ -101,13 +104,13 @@ class WorkflowEngine:
 
         self.planner = PlannerAgent()
 
-
-
         # =========================
         # Observability
         # =========================
 
-        self.logger = AILogger()
+        self.logger = get_logger(
+            "workflow_engine"
+        )
 
         self.metrics = MetricsCollector()
 
@@ -116,7 +119,6 @@ class WorkflowEngine:
         self.tracer = TraceManager()
 
         self.health = HealthMonitor()
-
 
 
         # =========================
@@ -286,19 +288,17 @@ class WorkflowEngine:
             # Planner
             # =========================
 
-            log = self.logger.start(
-                task_id,
-                task.action
+            log_event(
+               self.logger,
+               "info",
+               "workflow started",
+               event="workflow_start",
+               service="workflow_engine",
+               metadata={
+               "task_id": task_id,
+               "action": task.action
+               }
             )
-
-
-            runtime.plan = self.planner.create_plan(
-                task
-            )
-
-
-            task.plan = runtime.plan
-
 
 
             # =========================
@@ -423,14 +423,22 @@ class WorkflowEngine:
 
             )
 
+            runtime.execution = {
+                "completed": True,
+                "agents": runtime.agent_results
+            }
 
-
-            runtime.execution = self.logger.finish(
-                log,
-                runtime.agent_results
+            log_event(
+                self.logger,
+                "info",
+                "workflow completed",
+                event="workflow_finish",
+                service="workflow_engine",
+                metadata={
+                    "task_id": task_id,
+                    "agents": len(runtime.agent_results)
+                }
             )
-
-
 
             execution_time = trace.finish()
 
@@ -507,24 +515,26 @@ class WorkflowEngine:
 
         except Exception as error:
 
-
             self.metrics.task_failed()
-
 
             self.audit.record(
                 "task_failed",
                 {
-                    "task_id":task_id,
-                    "error":repr(error)
+                    "task_id": task_id,
+                    "error": repr(error)
                 }
             )
 
-
-            self.logger.error(
-                task_id,
-                repr(error)
+            log_event(
+                self.logger,
+                "error",
+                repr(error),
+                event="workflow_error",
+                service="workflow_engine",
+                metadata={
+                    "task_id": task_id
+                }
             )
-
 
             try:
                 trace.finish()
@@ -532,12 +542,9 @@ class WorkflowEngine:
             except Exception:
                 pass
 
-
-
             runtime.add_error(
                 repr(error)
             )
-
 
             return self.error_handler.handle(
                 task,

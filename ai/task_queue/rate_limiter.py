@@ -1,8 +1,9 @@
-import time
+import os
 import redis
 
 
 class RateLimiter:
+
 
     def __init__(
         self,
@@ -10,21 +11,29 @@ class RateLimiter:
         redis_url=None
     ):
 
-        if redis_url:
-            url = redis_url
 
-        if url is None:
-            import os
+        url = (
 
-            url = os.getenv(
+            redis_url
+
+            or url
+
+            or os.getenv(
                 "REDIS_URL",
-                "redis://localhost:6379"
+                "redis://redis:6379"
             )
 
-        self.redis = redis.Redis.from_url(
-            url,
-            decode_responses=True
         )
+
+
+        self.redis = redis.Redis.from_url(
+
+            url,
+
+            decode_responses=True
+
+        )
+
 
 
     def allow(
@@ -34,23 +43,33 @@ class RateLimiter:
         window
     ):
 
+
         redis_key = (
             f"rate-limit:{key}"
         )
+
 
         current = self.redis.get(
             redis_key
         )
 
+
         if current is None:
 
+
             self.redis.set(
+
                 redis_key,
+
                 1,
+
                 ex=window
+
             )
 
+
             return True
+
 
 
         if int(current) >= limit:
@@ -58,11 +77,14 @@ class RateLimiter:
             return False
 
 
+
         self.redis.incr(
             redis_key
         )
 
+
         return True
+
 
 
     def remaining(
@@ -71,25 +93,30 @@ class RateLimiter:
         limit
     ):
 
+
         redis_key = (
             f"rate-limit:{key}"
         )
+
 
         current = self.redis.get(
             redis_key
         )
 
+
         if current is None:
+
             return limit
 
-        remaining = (
-            limit - int(current)
-        )
 
         return max(
-            remaining,
+
+            limit - int(current),
+
             0
+
         )
+
 
 
     def reset(
@@ -98,5 +125,7 @@ class RateLimiter:
     ):
 
         self.redis.delete(
+
             f"rate-limit:{key}"
+
         )
