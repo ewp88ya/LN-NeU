@@ -12,7 +12,6 @@ on:
 
 jobs:
 
-
   backend:
 
     runs-on: ubuntu-latest
@@ -25,11 +24,9 @@ jobs:
 
       - uses: actions/checkout@v4
 
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
 
       - run: npm install
 
@@ -49,11 +46,9 @@ jobs:
 
       - uses: actions/checkout@v4
 
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
 
       - run: npm install
 
@@ -69,6 +64,8 @@ jobs:
       run:
         working-directory: ai
 
+    env:
+      PYTHONPATH: .
 
     steps:
 
@@ -80,7 +77,8 @@ jobs:
           python-version: "3.12"
 
 
-      - run: |
+      - name: Install AI Dependencies
+        run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
@@ -109,10 +107,25 @@ jobs:
 
     runs-on: ubuntu-latest
 
-
     steps:
 
       - uses: actions/checkout@v4
+
+
+      - name: Create Production Environment
+        run: |
+          cat > .env.production <<EOF
+          POSTGRES_USER=test
+          POSTGRES_PASSWORD=test
+          POSTGRES_DB=ln_neu
+          DATABASE_URL=postgresql://test:test@localhost:5432/ln_neu
+          REDIS_URL=redis://localhost:6379
+          OLLAMA_URL=http://localhost:11434
+          OLLAMA_MODEL=qwen2.5:7b
+          GHCR_OWNER=test
+          VERSION=ci
+          ENVIRONMENT=ci
+          EOF
 
 
       - name: Validate Docker Compose
