@@ -97,7 +97,6 @@ class WorkflowEngine:
         self.security_audit = self.security.audit
 
 
-
         # =========================
         # Planner
         # =========================
@@ -283,10 +282,14 @@ class WorkflowEngine:
             }
 
 
-
             # =========================
             # Planner
             # =========================
+
+            runtime.plan = self.planner.create_plan(
+                task
+            )
+
 
             log_event(
                self.logger,

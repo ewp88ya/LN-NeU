@@ -116,6 +116,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Create CI Environment
+        run: |
+          cat > .env.production <<EOF
+          ENVIRONMENT=test
+          POSTGRES_USER=lnneu
+          POSTGRES_PASSWORD=test
+          POSTGRES_DB=lnneu
+          DATABASE_URL=postgresql://lnneu:test@postgres:5432/lnneu
+          REDIS_URL=redis://redis:6379
+          OLLAMA_URL=http://localhost:11434/api/generate
+          OLLAMA_MODEL=qwen2.5:7b
+          AI_PORT=8000
+          GHCR_OWNER=ewp88ya
+          VERSION=test
+          EOF
 
 
       - name: Docker Compose Validation
@@ -150,6 +165,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Create CI Environment
+        run: |
+          cat > .env.production <<EOF
+          ENVIRONMENT=test
+          POSTGRES_USER=lnneu
+          POSTGRES_PASSWORD=test
+          POSTGRES_DB=lnneu
+          DATABASE_URL=postgresql://lnneu:test@postgres:5432/lnneu
+          REDIS_URL=redis://redis:6379
+          OLLAMA_URL=http://localhost:11434/api/generate
+          OLLAMA_MODEL=qwen2.5:7b
+          AI_PORT=8000
+          GHCR_OWNER=ewp88ya
+          VERSION=test
+          EOF
 
 
       - name: Start Test Services
