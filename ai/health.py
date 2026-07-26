@@ -9,5 +9,5 @@ class HealthCheck:
             "status": "healthy",
             "service": "LN-NeU AI Engine",
             "version": "1.0.0",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }

@@ -3,6 +3,7 @@ from memory.persistent import PersistentMemory
 from memory import create_memory_manager
 from memory import MemoryRetrieval
 from tools.http_tool import HTTPTool
+from processing import ProcessingOrchestrator
 
 from security import (
     PromptGuard,
@@ -67,6 +68,7 @@ class WorkflowEngine:
 
     def __init__(self):
 
+        self.processing_orchestrator = ProcessingOrchestrator()
 
         # =========================
         # Memory Layer
@@ -258,6 +260,9 @@ class WorkflowEngine:
                 runtime
             )
 
+            runtime = await self.processing_orchestrator.run(
+                runtime
+            )
 
             task = runtime.task
 

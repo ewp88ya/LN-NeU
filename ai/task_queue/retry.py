@@ -1,8 +1,7 @@
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 class RetryPolicy:
-
 
     def __init__(
         self,
@@ -10,8 +9,6 @@ class RetryPolicy:
     ):
 
         self.max_retry = max_retry
-
-
 
     def should_retry(
         self,
@@ -24,8 +21,6 @@ class RetryPolicy:
         )
 
         return retry_count < self.max_retry
-
-
 
     def increase_retry(
         self,
@@ -40,7 +35,7 @@ class RetryPolicy:
         )
 
         task["last_retry"] = (
-            datetime.utcnow().isoformat()
+            datetime.now(UTC).isoformat()
         )
 
         return task

@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, UTC
 
 class ConversationMemory:
 

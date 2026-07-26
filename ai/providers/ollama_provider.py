@@ -2,8 +2,7 @@ from config.settings import settings
 
 import httpx
 import time
-from datetime import datetime
-
+from datetime import datetime, UTC
 
 class OllamaProvider:
 
@@ -149,7 +148,7 @@ class OllamaProvider:
 
 
                 "timestamp":
-                datetime.utcnow().isoformat(),
+                datetime.now(UTC).isoformat(),
 
 
                 "latency":

@@ -1,6 +1,5 @@
 from typing import Dict, Any
-from datetime import datetime
-
+from datetime import datetime, UTC
 
 class ShortTermMemory:
 
@@ -16,7 +15,7 @@ class ShortTermMemory:
 
         self.sessions[task_id] = {
             "context": context,
-            "updated_at": datetime.utcnow()
+            "updated_at": datetime.now(UTC)
         }
 
 
