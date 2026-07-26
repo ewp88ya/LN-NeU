@@ -52,6 +52,13 @@ jobs:
           ./ai
 
 
+      - name: Build AI Worker
+        run: |
+          docker build \
+          -t ghcr.io/${{ github.repository_owner }}/ln-neu-ai-worker:${{ github.ref_name }} \
+          ./ai
+
+
       - name: Push Core
         run: |
           docker push \
@@ -62,3 +69,9 @@ jobs:
         run: |
           docker push \
           ghcr.io/${{ github.repository_owner }}/ln-neu-ai:${{ github.ref_name }}
+
+
+      - name: Push AI Worker
+        run: |
+          docker push \
+          ghcr.io/${{ github.repository_owner }}/ln-neu-ai-worker:${{ github.ref_name }}
