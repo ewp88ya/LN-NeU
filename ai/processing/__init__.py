@@ -15,6 +15,7 @@ from .embedding import EmbeddingPreparation
 
 from .normalizer import DataNormalizer
 from .chunker import TextChunker
+from .orchestrator import ProcessingOrchestrator
 
 __all__ = [
     "DataParser",
@@ -26,5 +27,6 @@ __all__ = [
     "DataIngestionPipeline",
     "ProcessingPipeline",
     "TaskContext",
-    "EmbeddingPreparation"
+    "EmbeddingPreparation",
+    "ProcessingOrchestrator",
 ]

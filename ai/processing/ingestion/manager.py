@@ -1,7 +1,9 @@
+from processing.ingestion.base import BaseIngestion
 from processing.ingestion.document import Document
 
 
-class IngestionManager:
+
+class IngestionManager(BaseIngestion):
 
 
     def __init__(self):
@@ -9,13 +11,33 @@ class IngestionManager:
         self.sources = []
 
 
-    def register(self, source):
 
-        self.sources.append(source)
+    def register(
+        self,
+        source
+    ):
+
+        self.sources.append(
+            source
+        )
 
 
 
-    async def process(self, data):
+    async def ingest(
+        self,
+        data
+    ):
+
+        return await self.process(
+            data
+        )
+
+
+
+    async def process(
+        self,
+        data
+    ):
 
         document = Document(
             id=data.get("id"),
@@ -27,4 +49,3 @@ class IngestionManager:
         )
 
         return document
-

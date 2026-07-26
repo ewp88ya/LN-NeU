@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from pydantic import BaseModel
 
 
@@ -10,4 +10,4 @@ class Document(BaseModel):
 
     metadata: dict = {}
 
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(UTC)

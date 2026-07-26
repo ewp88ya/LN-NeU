@@ -1,10 +1,14 @@
+from .base import DataSource
 from .document import Document
 from .manager import IngestionManager
-from .base import DataSource
+
+
+DataIngestionPipeline = IngestionManager
 
 
 __all__ = [
+    "DataSource",
     "Document",
     "IngestionManager",
-    "DataSource"
+    "DataIngestionPipeline",
 ]

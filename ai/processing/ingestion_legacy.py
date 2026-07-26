@@ -1,6 +1,5 @@
 from uuid import uuid4
-from datetime import datetime
-
+from datetime import datetime, UTC
 
 from processing.document_loader import DocumentLoader
 from processing.normalizer import DataNormalizer
