@@ -15,10 +15,9 @@ class QueueMetrics:
             redis_url
             or os.getenv(
                 "REDIS_URL",
-                "redis://localhost:6379"
+                "redis://redis:6379"
             )
         )
-
 
         self.redis = redis.Redis.from_url(
             redis_url,
