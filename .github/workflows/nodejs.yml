@@ -65,7 +65,7 @@ jobs:
         working-directory: ai
 
     env:
-      PYTHONPATH: .
+      PYTHONPATH: ${{ github.workspace }}/LN-NeU/ai
 
     steps:
 
@@ -94,18 +94,19 @@ jobs:
 
       - name: Sprint 17 Queue Integration Test
         run: |
-          python task_queue/test_sprint17_integration.py
+          python -m task_queue.test_sprint17_integration
 
 
       - name: Sprint 17 Queue Stress Test
         run: |
-          python task_queue/test_sprint17_stress.py
+          python -m task_queue.test_sprint17_stress
 
 
 
   docker:
 
     runs-on: ubuntu-latest
+
 
     steps:
 
