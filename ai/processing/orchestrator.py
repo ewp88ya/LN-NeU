@@ -25,6 +25,7 @@ class ProcessingOrchestrator:
             embedding_service=self.embedding,
         )
 
+
     async def run(self, runtime):
 
         task = runtime.task
@@ -39,8 +40,28 @@ class ProcessingOrchestrator:
             }
         )
 
+        etl_result = await self.etl.run(
+            document
+        )
+
+        loaded = etl_result
+
+        embedding = self.embedding.embed(
+            loaded["content"]
+        )
+
+        self.vector_db.insert(
+            {
+                "embedding": embedding,
+                "content": loaded["content"]
+            }
+        )
+
         runtime.processing = {
-            "document": document
+            "document": document,
+            "etl": etl_result,
+            "loaded": loaded,
+            "embedding": embedding,
         }
 
         return runtime
