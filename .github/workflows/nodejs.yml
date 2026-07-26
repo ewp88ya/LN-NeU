@@ -126,19 +126,7 @@ jobs:
 
       - name: Create Production Environment
         run: |
-          cat > .env.production <<EOF
-          POSTGRES_USER=test
-          POSTGRES_PASSWORD=test
-          POSTGRES_DB=ln_neu
-          DATABASE_URL=postgresql://test:test@localhost:5432/ln_neu
-          REDIS_URL=redis://localhost:6379
-          OLLAMA_URL=http://localhost:11434
-          OLLAMA_MODEL=qwen2.5:7b
-          GHCR_OWNER=test
-          VERSION=ci
-          ENVIRONMENT=ci
-          EOF
-
+          cp .env.test .env.production
 
       - name: Validate Docker Compose
         run: |
