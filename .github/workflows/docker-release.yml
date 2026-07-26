@@ -1,0 +1,64 @@
+name: LN-NeU Docker Release
+
+
+on:
+
+  push:
+    tags:
+      - "v*"
+
+
+permissions:
+
+  contents: read
+  packages: write
+
+
+jobs:
+
+
+  build-push:
+
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - name: Build Core
+        run: |
+          docker build \
+          -t ghcr.io/${{ github.repository_owner }}/ln-neu-core:${{ github.ref_name }} \
+          ./backend
+
+
+      - name: Build AI
+        run: |
+          docker build \
+          -t ghcr.io/${{ github.repository_owner }}/ln-neu-ai:${{ github.ref_name }} \
+          ./ai
+
+
+      - name: Push Core
+        run: |
+          docker push \
+          ghcr.io/${{ github.repository_owner }}/ln-neu-core:${{ github.ref_name }}
+
+
+      - name: Push AI
+        run: |
+          docker push \
+          ghcr.io/${{ github.repository_owner }}/ln-neu-ai:${{ github.ref_name }}

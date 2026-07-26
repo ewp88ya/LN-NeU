@@ -82,11 +82,9 @@ services:
       - lnneu-network
 
 
-
   ln-neu-ai:
 
-    build:
-      context: ./ai
+    image: ghcr.io/${GHCR_OWNER}/ln-neu-ai:${VERSION}
 
     container_name: ln-neu-ai
 
@@ -157,14 +155,9 @@ services:
 
 
 
-
-
   ln-neu-ai-worker:
 
-
-    build:
-
-      context: ./ai
+    image: ghcr.io/${GHCR_OWNER}/ln-neu-ai-worker:${VERSION}
 
 
     container_name: ln-neu-ai-worker
@@ -267,18 +260,14 @@ services:
 
 
 
-
   ln-neu-core:
 
 
-    build:
-
-      context: ./backend
+    image: ghcr.io/${GHCR_OWNER}/ln-neu-core:${VERSION}
 
 
 
     container_name: ln-neu-core
-
 
 
     restart: always
