@@ -1,30 +1,20 @@
 name: LN-NeU Docker Release
 
-
 on:
-
   push:
     tags:
       - "v*"
 
-
 permissions:
-
   contents: read
   packages: write
 
-
 jobs:
-
-
   build-push:
-
 
     runs-on: ubuntu-latest
 
-
     steps:
-
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,40 +28,64 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
 
-      - name: Build Core
-        run: |
-          docker build \
-          -t ghcr.io/${{ github.repository_owner }}/ln-neu-core:${{ github.ref_name }} \
-          ./backend
+      - name: Docker Metadata Core
+        id: meta-core
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ln-neu-core
+          tags: |
+            type=ref,event=tag
+            type=sha
 
 
-      - name: Build AI
-        run: |
-          docker build \
-          -t ghcr.io/${{ github.repository_owner }}/ln-neu-ai:${{ github.ref_name }} \
-          ./ai
+      - name: Docker Metadata AI
+        id: meta-ai
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ln-neu-ai
+          tags: |
+            type=ref,event=tag
+            type=sha
 
 
-      - name: Build AI Worker
-        run: |
-          docker build \
-          -t ghcr.io/${{ github.repository_owner }}/ln-neu-ai-worker:${{ github.ref_name }} \
-          ./ai
+      - name: Docker Metadata AI Worker
+        id: meta-worker
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ln-neu-ai-worker
+          tags: |
+            type=ref,event=tag
+            type=sha
 
 
-      - name: Push Core
-        run: |
-          docker push \
-          ghcr.io/${{ github.repository_owner }}/ln-neu-core:${{ github.ref_name }}
+      - name: Build and Push Core
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-core.outputs.tags }}
+          labels: ${{ steps.meta-core.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
 
-      - name: Push AI
-        run: |
-          docker push \
-          ghcr.io/${{ github.repository_owner }}/ln-neu-ai:${{ github.ref_name }}
+      - name: Build and Push AI
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ai
+          push: true
+          tags: ${{ steps.meta-ai.outputs.tags }}
+          labels: ${{ steps.meta-ai.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
 
-      - name: Push AI Worker
-        run: |
-          docker push \
-          ghcr.io/${{ github.repository_owner }}/ln-neu-ai-worker:${{ github.ref_name }}
+      - name: Build and Push AI Worker
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ai
+          push: true
+          tags: ${{ steps.meta-worker.outputs.tags }}
+          labels: ${{ steps.meta-worker.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
