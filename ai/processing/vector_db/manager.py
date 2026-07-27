@@ -34,12 +34,11 @@ class VectorDBManager:
         )
 
 
-
     def search(
         self,
         vector,
-        backend="memory",
-        limit=5
+        limit=5,
+        backend="memory"
     ):
 
         db = self.backends.get(
@@ -50,7 +49,6 @@ class VectorDBManager:
             raise ValueError(
                 "Vector backend not found"
             )
-
 
         return db.search(
             vector,

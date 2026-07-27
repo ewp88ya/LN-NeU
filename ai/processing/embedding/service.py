@@ -1,5 +1,4 @@
-from .model import EmbeddingModel
-
+from .ollama import OllamaEmbeddingProvider
 
 
 class EmbeddingService:
@@ -7,14 +6,13 @@ class EmbeddingService:
 
     def __init__(
         self,
-        model=None
+        provider=None
     ):
 
-        self.model = (
-            model
-            or EmbeddingModel()
+        self.provider = (
+            provider
+            or OllamaEmbeddingProvider()
         )
-
 
 
     def embed(
@@ -22,6 +20,6 @@ class EmbeddingService:
         text
     ):
 
-        return self.model.encode(
+        return self.provider.embed(
             text
         )

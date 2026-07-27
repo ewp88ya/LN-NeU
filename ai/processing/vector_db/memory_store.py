@@ -1,14 +1,12 @@
-from .base import BaseVectorDB
+from .schema import VectorItem
 
 
-
-class MemoryVectorDB(BaseVectorDB):
+class MemoryVectorDB:
 
 
     def __init__(self):
 
         self.storage = []
-
 
 
     def insert(
@@ -19,7 +17,6 @@ class MemoryVectorDB(BaseVectorDB):
         self.storage.append(
             item
         )
-
 
 
     def search(
