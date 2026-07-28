@@ -1,6 +1,6 @@
 from tools.registry import ToolRegistry
-
-
+from tools.permission import ToolPermission
+from security.authorization import Authorization
 
 class ToolRuntime:
 
@@ -14,10 +14,12 @@ class ToolRuntime:
 
         self.registry = ToolRegistry()
 
+        self.permission = ToolPermission()
+
+        self.authorization = Authorization()
+
         self.metrics = metrics
-
         self.audit = audit
-
 
 
     async def execute_all(
@@ -76,20 +78,74 @@ class ToolRuntime:
 
 
 
-
     async def execute(
         self,
         tool_name,
+        agent_name=None,
+        role="agent",
         *args,
         **kwargs
     ):
-
 
 
         tool = self.registry.get(
             tool_name
         )
 
+        if not self.authorization.allowed(
+            role,
+            "execute_tool"
+        ):
+
+            if self.audit:
+
+                self.audit.record(
+                    "tool_execution_denied",
+                    {
+                         "reason": "authorization_failed",
+                         "tool": tool_name,
+                         "role": role
+                    }
+                )
+
+
+            return {
+
+                "status": "denied",
+
+                "tool": tool_name,
+
+                "reason": "authorization_failed"
+
+            }
+
+        if agent_name:
+
+           if not self.permission.allowed(
+               agent_name,
+               tool_name
+           ):
+
+               if self.audit:
+
+                  self.audit.record(
+                      "tool_execution_denied",
+                      {
+                          "agent": agent_name,
+                          "tool": tool_name
+                      }
+                  )
+
+
+               return {
+
+                   "status": "denied",
+
+                   "tool": tool_name,
+
+                   "reason": "permission denied"
+
+               }
 
 
         if not tool:

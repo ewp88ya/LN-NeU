@@ -5,33 +5,21 @@ class ToolPermission:
 
         self.permissions = {
 
-
-            "network-agent": [
-
+            "network": [
                 "ping_server",
-
                 "dns_lookup",
-
                 "http_check"
-
             ],
 
 
-
-            "analysis-agent": [
-
+            "analysis": [
                 "ping_server",
-
                 "dns_lookup"
-
             ],
 
 
-
-            "optimizer-agent": [
-
+            "optimizer": [
                 "ping_server"
-
             ]
 
         }
@@ -39,20 +27,12 @@ class ToolPermission:
 
 
     def allowed(
-
         self,
-
         agent_name,
-
         tool_name
-
     ):
 
-
         return tool_name in self.permissions.get(
-
             agent_name,
-
             []
-
         )

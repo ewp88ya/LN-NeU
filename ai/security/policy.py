@@ -5,46 +5,85 @@ class SecurityPolicy:
 
         self.policies = {
 
+
             "agents": {
 
-                "analysis-agent": [
+                "analysis": [
+
                     "memory",
+
                     "llm"
+
                 ],
 
-                "network-agent": [
+
+                "network": [
+
                     "network_tool"
+
                 ],
 
-                "optimizer-agent": [
+
+                "optimizer": [
+
                     "analysis"
+
                 ]
 
             },
+
 
 
             "tools": {
 
                 "ping_server": [
-                    "network-agent",
-                    "analysis-agent"
+
+                    "network",
+
+                    "analysis"
+
+                ],
+
+
+                "dns_lookup": [
+
+                    "network",
+
+                    "analysis"
+
+                ],
+
+
+                "http_check": [
+
+                    "network"
+
                 ]
 
             },
 
 
+
             "actions": {
 
                 "analyze": [
-                    "analysis-agent"
+
+                    "analysis"
+
                 ],
+
 
                 "network": [
-                    "network-agent"
+
+                    "network"
+
                 ],
 
+
                 "optimize": [
-                    "optimizer-agent"
+
+                    "optimizer"
+
                 ]
 
             }

@@ -102,18 +102,29 @@ class SecurityMiddleware:
             # System Identity
             # =========================
 
-            identity = {
+            session_id = getattr(
+                task,
+                "session_id",
+                None
+            )
 
 
-                "user_id":
+            identity = self.auth.validate(
+                session_id
+            ) if session_id else None
+
+
+            if not identity:
+
+                identity = {
+
+                    "user_id":
                     "system",
 
-
-                "role":
+                    "role":
                     "agent"
 
             }
-
 
 
             # =========================
