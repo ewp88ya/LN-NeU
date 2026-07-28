@@ -7,5 +7,12 @@ class MockProvider(ModelProvider):
 
         return {
             "provider": "mock",
-            "response": prompt
+            "response": prompt,
+        }
+
+    async def embed(self, text: str):
+
+        return {
+            "model": "mock-embedding",
+            "vector": [0.0] * 768,
         }

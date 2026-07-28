@@ -1,8 +1,7 @@
-from .ollama import OllamaEmbeddingProvider
+from providers.embedding_factory import get_embedding_provider
 
 
 class EmbeddingService:
-
 
     def __init__(
         self,
@@ -11,9 +10,8 @@ class EmbeddingService:
 
         self.provider = (
             provider
-            or OllamaEmbeddingProvider()
+            or get_embedding_provider()
         )
-
 
     def embed(
         self,
