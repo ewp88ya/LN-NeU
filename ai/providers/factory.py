@@ -5,11 +5,7 @@ from providers.ollama_provider import OllamaProvider
 
 
 def get_provider():
-
-    provider = os.getenv(
-        "AI_PROVIDER",
-        "ollama"
-    )
+    provider = os.getenv("AI_PROVIDER", "mock").lower()
 
     if provider == "ollama":
         return OllamaProvider()

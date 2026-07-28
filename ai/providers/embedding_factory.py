@@ -1,21 +1,13 @@
 import os
 
-from providers.ollama_embedding import (
-    OllamaEmbeddingProvider
-)
-from providers.mock_embedding import (
-    MockEmbeddingProvider
-)
+from providers.mock_embedding import MockEmbeddingProvider
+from providers.ollama_embedding import OllamaEmbeddingProvider
 
 
 def get_embedding_provider():
+    provider = os.getenv("EMBEDDING_PROVIDER", "mock").lower()
 
-    provider = os.getenv(
-        "EMBEDDING_PROVIDER",
-        "ollama"
-    ).lower()
+    if provider == "ollama":
+        return OllamaEmbeddingProvider()
 
-    if provider == "mock":
-        return MockEmbeddingProvider()
-
-    return OllamaEmbeddingProvider()
+    return MockEmbeddingProvider()

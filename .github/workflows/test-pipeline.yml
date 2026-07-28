@@ -56,6 +56,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      AI_PROVIDER: mock
+      EMBEDDING_PROVIDER: mock
+
 
     defaults:
       run:
