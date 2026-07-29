@@ -33,7 +33,6 @@ class SecretManager:
         return value
 
 
-
     def exists(
         self,
         key
@@ -45,8 +44,28 @@ class SecretManager:
 
 
 
+    def required(
+         self,
+         key
+    ):
+
+        value = self.get(
+           key
+        )
+
+        if value is None:
+
+            raise RuntimeError(
+                f"Required secret '{key}' not found"
+            )
+
+        return value
+
+
+
     def clear(
         self
     ):
 
         self.cache.clear()
+

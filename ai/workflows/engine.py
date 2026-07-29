@@ -4,6 +4,8 @@ from memory import create_memory_manager
 from memory import MemoryRetrieval
 from tools.http_tool import HTTPTool
 from processing import ProcessingOrchestrator
+from agents.planner.planner import AgentPlanner
+from agents.executor import AgentExecutor
 
 from security import (
     PromptGuard,
@@ -12,8 +14,6 @@ from security import (
 
 from security.middleware import SecurityMiddleware
 
-
-from planners.planner import PlannerAgent
 
 from observability.logger import (
     get_logger,
@@ -103,7 +103,7 @@ class WorkflowEngine:
         # Planner
         # =========================
 
-        self.planner = PlannerAgent()
+        self.planner = AgentPlanner()
 
         # =========================
         # Observability
@@ -179,11 +179,13 @@ class WorkflowEngine:
 
         self.agent_manager = AgentManager()
 
+        self.executor = AgentExecutor(
+            self.agent_manager
+        )
 
         self.agent_manager.register_agent(
             AnalysisAgent()
         )
-
 
         self.agent_manager.register_agent(
             NetworkAgent(
@@ -191,7 +193,6 @@ class WorkflowEngine:
                 runtime=self.tool_runtime
             )
         )
-
 
         self.agent_manager.register_agent(
             OptimizerAgent()
@@ -313,14 +314,15 @@ class WorkflowEngine:
             # Agent Execution
             # =========================
 
-            for agent_name in runtime.plan.agents:
+            for step in runtime.plan.steps:
+
+                agent_name = step["agent"]
 
 
                 if not self.agent_isolation.validate(
                     agent_name,
                     task
                 ):
-
 
                     self.metrics.agent_failed()
 
@@ -351,13 +353,12 @@ class WorkflowEngine:
 
 
 
-                    result = await self.agent_manager.execute(
-                        agent_name,
+                    result = await self.executor.execute(
+                        step,
                         task,
                         self.tool_runtime,
                         self.tool_selector
                     )
-
 
 
                     if hasattr(

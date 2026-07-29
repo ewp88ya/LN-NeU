@@ -1,16 +1,16 @@
+from pydantic import BaseModel
 from typing import List, Dict
 
 
-class AgentPlanner:
-    """
-    Agent Planner Layer
 
-    Responsible for:
-    - analyzing task intent
-    - selecting agent
-    - creating execution plan
-    - preparing multi-step workflow
-    """
+class AgentPlan(BaseModel):
+
+    agents: List[str]
+
+    steps: List[Dict]
+
+
+class AgentPlanner:
 
 
     def __init__(self):
@@ -28,15 +28,16 @@ class AgentPlanner:
                 "connection"
             ],
 
+
             "optimizer": [
                 "optimize",
                 "performance",
                 "improve",
                 "speed",
-                "reduce",
                 "memory",
                 "cpu"
             ],
+
 
             "analysis": [
                 "analyze",
@@ -53,12 +54,11 @@ class AgentPlanner:
 
     def detect_agent(
         self,
-        text: str
+        text:str
     ) -> str:
 
-        text = text.lower()
 
-        selected = "analysis"
+        text=text.lower()
 
 
         for agent, keywords in self.rules.items():
@@ -69,37 +69,15 @@ class AgentPlanner:
                     return agent
 
 
-        return selected
+        return "analysis"
 
 
 
-    def build_steps(
-        self,
-        agent: str,
-        task
-    ) -> List[Dict]:
-
-        steps = []
-
-
-        steps.append(
-            {
-                "step": 1,
-                "agent": agent,
-                "action": task.action,
-                "input": task.input
-            }
-        )
-
-
-        return steps
-
-
-
-    def plan(
+    def create_plan(
         self,
         task
-    ) -> List[Dict]:
+    ):
+
 
         if isinstance(task.input, dict):
 
@@ -111,16 +89,30 @@ class AgentPlanner:
 
         else:
 
-            text = str(task.input)
+            text=str(task.input)
 
 
 
-        selected_agent = self.detect_agent(
-            text
-        )
+        agent=self.detect_agent(text)
 
 
-        return self.build_steps(
-            selected_agent,
-            task
+
+        return AgentPlan(
+
+            agents=[
+                agent
+            ],
+
+
+            steps=[
+
+                {
+                    "step":1,
+                    "agent":agent,
+                    "action":task.action,
+                    "input":task.input
+                }
+
+            ]
+
         )

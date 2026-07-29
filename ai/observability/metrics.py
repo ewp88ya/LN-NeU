@@ -107,11 +107,6 @@ class MetricsCollector:
             "tools_failed"
         ] += 1
 
-    def agent_failed(self):
-
-        self.metrics[
-            "agents_failed"
-        ] += 1
 
     # =========================
     # Analytics

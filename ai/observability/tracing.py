@@ -1,6 +1,7 @@
 import time
 import uuid
 
+from collections import deque
 
 
 class TraceSpan:
@@ -68,8 +69,9 @@ class TraceManager:
 
     def __init__(self):
 
-        self.traces = []
-
+        self.traces = deque(
+            maxlen=1000
+        )
 
 
     def start(

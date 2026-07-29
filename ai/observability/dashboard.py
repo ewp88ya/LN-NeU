@@ -3,6 +3,7 @@ import time
 from observability.health_monitor import HealthMonitor
 from observability.queue_monitor import QueueMonitor
 from observability.error_tracker import ErrorTracker
+from observability.metrics import MetricsCollector
 
 
 class Dashboard:
@@ -17,6 +18,7 @@ class Dashboard:
 
         self.errors = ErrorTracker()
 
+        self.metrics = MetricsCollector()
 
     def snapshot(self):
 
@@ -32,6 +34,8 @@ class Dashboard:
             "health": self.health.check_all(),
 
             "metrics": self.queue.snapshot(),
+
+            "queue": self.queue.snapshot(),
 
             "errors": {
 
