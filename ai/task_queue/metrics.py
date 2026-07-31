@@ -10,7 +10,6 @@ class QueueMetrics:
         redis_url=None
     ):
 
-
         redis_url = (
             redis_url
             or os.getenv(
@@ -18,6 +17,10 @@ class QueueMetrics:
                 "redis://redis:6379"
             )
         )
+
+
+        self.redis = None
+        self.redis_available = False
 
 
         try:
@@ -28,7 +31,6 @@ class QueueMetrics:
                 socket_connect_timeout=1
             )
 
-
             self.redis.ping()
 
             self.redis_available = True
@@ -37,20 +39,31 @@ class QueueMetrics:
         except Exception:
 
             self.redis = None
-
             self.redis_available = False
 
 
 
         self.prefix = "ln-neu-metrics"
 
+
         self.local_metrics = {
+
             "queued": 0,
+
             "processed": 0,
+
             "failed": 0,
+
             "retry": 0,
+
             "recovery": 0,
+
             "dead_letter": 0,
+
+            "queue_depth": 0,
+
+            "last_latency": 0,
+
         }
 
 
@@ -69,7 +82,7 @@ class QueueMetrics:
 
 
     # =========================
-    # Increment Metrics
+    # Increment
     # =========================
 
     def increment(
@@ -79,18 +92,29 @@ class QueueMetrics:
     ):
 
 
+        self.local_metrics[metric] = (
+            self.local_metrics.get(metric, 0)
+            + value
+        )
+
+
         if not self.redis_available:
 
-           self.local_metrics[metric] = (
-               self.local_metrics.get(metric, 0) + value
-           )
+            return
 
-           return
 
-        self.redis.incrby(
-            self._key(metric),
-            value
-        )
+        try:
+
+            self.redis.incrby(
+                self._key(metric),
+                value
+            )
+
+        except Exception:
+
+            self.redis_available = False
+
+
 
     # =========================
     # Queue Events
@@ -137,7 +161,7 @@ class QueueMetrics:
 
 
     # =========================
-    # Reliability Events
+    # Reliability
     # =========================
 
     def record_recovery(
@@ -170,16 +194,26 @@ class QueueMetrics:
     ):
 
 
+        self.local_metrics["last_latency"] = seconds
+
+
         if not self.redis_available:
+
             return
 
 
-        self.redis.set(
-            self._key(
-                "last_latency"
-            ),
-            seconds
-        )
+        try:
+
+            self.redis.set(
+                self._key(
+                    "last_latency"
+                ),
+                seconds
+            )
+
+        except Exception:
+
+            self.redis_available = False
 
 
 
@@ -193,21 +227,76 @@ class QueueMetrics:
     ):
 
 
+        self.local_metrics["queue_depth"] = size
+
+
         if not self.redis_available:
+
             return
 
 
-        self.redis.set(
-            self._key(
-                "queue_depth"
-            ),
-            size
-        )
+        try:
+
+            self.redis.set(
+                self._key(
+                    "queue_depth"
+                ),
+                size
+            )
+
+        except Exception:
+
+            self.redis_available = False
 
 
 
     # =========================
-    # Dashboard Snapshot
+    # Safe Redis Read
+    # =========================
+
+    def _get_metric(
+        self,
+        metric
+    ):
+
+
+        if not self.redis_available:
+
+            return self.local_metrics.get(
+                metric,
+                0
+            )
+
+
+        try:
+
+            value = self.redis.get(
+                self._key(metric)
+            )
+
+
+            if value is None:
+
+                return self.local_metrics.get(
+                    metric,
+                    0
+                )
+
+
+            return float(value)
+
+
+        except Exception:
+
+            return self.local_metrics.get(
+                metric,
+                0
+            )
+
+
+
+    # =========================
+    # Snapshot
     # =========================
 
     def stats(
@@ -215,88 +304,45 @@ class QueueMetrics:
     ):
 
 
-        default = {
+        metrics = [
 
-            "queued": 0.0,
+            "queued",
 
-            "processed": 0.0,
+            "processed",
 
-            "failed": 0.0,
+            "failed",
 
-            "retry": 0.0,
+            "retry",
 
-            "recovery": 0.0,
+            "recovery",
 
-            "dead_letter": 0.0,
+            "dead_letter",
 
-            "queue_depth": 0.0,
+            "queue_depth",
 
-            "last_latency": 0.0,
+            "last_latency"
 
-            "redis": "offline"
-
-        }
+        ]
 
 
-
-        if not self.redis_available:
-
-            return default
+        result = {}
 
 
+        for metric in metrics:
 
-        try:
-
-
-            metrics = [
-
-                "queued",
-
-                "processed",
-
-                "failed",
-
-                "retry",
-
-                "recovery",
-
-                "dead_letter",
-
-                "queue_depth",
-
-                "last_latency"
-
-            ]
+            result[metric] = float(
+                self._get_metric(metric)
+            )
 
 
-            result = {}
+        result["redis"] = (
+            "online"
+            if self.redis_available
+            else "offline"
+        )
 
 
-            for metric in metrics:
-
-
-                value = self.redis.get(
-                    self._key(metric)
-                )
-
-
-                result[metric] = float(
-                    value or 0
-                )
-
-
-
-            result["redis"] = "online"
-
-
-            return result
-
-
-
-        except Exception:
-
-
-            return default
+        return result
 
 
 
@@ -309,20 +355,32 @@ class QueueMetrics:
     ):
 
 
+        for key in self.local_metrics:
+
+            self.local_metrics[key] = 0
+
+
+
         if not self.redis_available:
 
             return
 
 
 
-        keys = self.redis.keys(
-            f"{self.prefix}:*"
-        )
+        try:
 
-
-
-        if keys:
-
-            self.redis.delete(
-                *keys
+            keys = self.redis.keys(
+                f"{self.prefix}:*"
             )
+
+
+            if keys:
+
+                self.redis.delete(
+                    *keys
+                )
+
+
+        except Exception:
+
+            self.redis_available = False
