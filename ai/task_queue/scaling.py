@@ -3,10 +3,13 @@ import asyncio
 from workflows.engine import WorkflowEngine
 from task_queue.instance import task_queue
 from task_queue.concurrent_worker import ConcurrentWorker
+from observability.logger import (
+    get_logger,
+    log_event,
+)
 
 
 class ScalingManager:
-
 
     def __init__(
         self,
@@ -21,17 +24,21 @@ class ScalingManager:
             workers=worker_count
         )
 
+        self.logger = get_logger(
+            "scaling_manager"
+        )
 
     async def start(self):
 
-        print("=" * 50)
-        print("LN-NeU Scaling Manager")
-        print(f"Workers : {self.worker_count}")
-        print("=" * 50)
+        log_event(
+            self.logger,
+            "info",
+            "Scaling manager started",
+            event="scaling_start",
+            service="queue_scaling",
+            metadata={
+                "workers": self.worker_count
+            }
+        )
 
         await self.worker.start()
-
-
-    def stop(self):
-
-        self.worker.stop()

@@ -44,7 +44,7 @@ class PlannerAgent:
                 strategy="single-agent",
 
                 agents=[
-                    "network-agent"
+                    "network"
                 ],
 
                 reasoning="Explicit network action detected"
@@ -65,7 +65,7 @@ class PlannerAgent:
                 strategy="single-agent",
 
                 agents=[
-                    "analysis-agent"
+                    "analysis"
                 ],
 
                 reasoning="Explicit analysis action detected"
@@ -85,7 +85,7 @@ class PlannerAgent:
                 strategy="single-agent",
 
                 agents=[
-                    "optimizer-agent"
+                    "optimizer"
                 ],
 
                 reasoning="Explicit optimization action detected"

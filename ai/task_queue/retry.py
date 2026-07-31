@@ -1,4 +1,5 @@
 from datetime import datetime, UTC
+import time
 
 
 class RetryPolicy:
@@ -39,3 +40,18 @@ class RetryPolicy:
         )
 
         return task
+
+    def backoff(
+        self,
+        task
+    ):
+
+        retry = task.get(
+            "retry_count",
+            0
+        )
+
+        return min(
+            2 ** retry,
+            30
+        )

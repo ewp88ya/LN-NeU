@@ -1,3 +1,6 @@
+import json
+
+
 from memory.vector.store import VectorStore
 from memory.vector.search import VectorSearch
 from memory.storage.database import MemoryDatabase
@@ -6,12 +9,13 @@ class PersistentMemory:
 
     def __init__(self):
         self.db = MemoryDatabase()
-      
+
         self.vector = VectorStore()
         self.search_engine = VectorSearch(
             self.vector
         )
 
+    import json
 
     def store(
         self,
@@ -20,6 +24,11 @@ class PersistentMemory:
         input_text,
         response
     ):
+
+        if isinstance(input_text, dict):
+             input_text = json.dumps(
+                 input_text
+             )
 
         self.db.save(
             task_id,
@@ -35,7 +44,6 @@ class PersistentMemory:
                 "action": action
             }
         )
-
 
     def retrieve(self, task_id):
 

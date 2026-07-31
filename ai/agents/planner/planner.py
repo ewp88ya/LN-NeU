@@ -10,6 +10,7 @@ class AgentPlan(BaseModel):
     steps: List[Dict]
 
 
+
 class AgentPlanner:
 
 
@@ -17,35 +18,45 @@ class AgentPlanner:
 
         self.rules = {
 
+
             "network": [
+
                 "network",
                 "ping",
-                "ip",
                 "dns",
+                "ip",
                 "firewall",
                 "port",
                 "latency",
-                "connection"
+                "connection",
+                "scan"
+
             ],
 
 
+
             "optimizer": [
+
                 "optimize",
                 "performance",
                 "improve",
                 "speed",
                 "memory",
                 "cpu"
+
             ],
 
 
+
             "analysis": [
+
                 "analyze",
                 "analyse",
                 "check",
                 "explain",
                 "inspect",
                 "review"
+
             ]
 
         }
@@ -54,11 +65,11 @@ class AgentPlanner:
 
     def detect_agent(
         self,
-        text:str
+        text: str
     ) -> str:
 
 
-        text=text.lower()
+        text = text.lower()
 
 
         for agent, keywords in self.rules.items():
@@ -66,6 +77,7 @@ class AgentPlanner:
             for keyword in keywords:
 
                 if keyword in text:
+
                     return agent
 
 
@@ -79,39 +91,92 @@ class AgentPlanner:
     ):
 
 
-        if isinstance(task.input, dict):
+        #
+        # PRIORITY 1
+        # Check action first
+        #
 
-            text = (
-                task.input.get("message")
-                or task.input.get("text")
-                or str(task.input)
+        action_text = str(
+            task.action
+        )
+
+
+        agent = self.detect_agent(
+            action_text
+        )
+
+
+        #
+        # PRIORITY 2
+        # Check input if action unclear
+        #
+
+        if agent == "analysis":
+
+
+            if isinstance(
+                task.input,
+                dict
+            ):
+
+                text = (
+
+                    task.input.get(
+                        "message"
+                    )
+
+                    or
+
+                    task.input.get(
+                        "text"
+                    )
+
+                    or
+
+                    str(task.input)
+
+                )
+
+
+            else:
+
+                text = str(
+                    task.input
+                )
+
+
+            agent = self.detect_agent(
+                text
             )
-
-        else:
-
-            text=str(task.input)
-
-
-
-        agent=self.detect_agent(text)
 
 
 
         return AgentPlan(
 
+
             agents=[
+
                 agent
+
             ],
+
 
 
             steps=[
 
+
                 {
+
                     "step":1,
+
                     "agent":agent,
+
                     "action":task.action,
+
                     "input":task.input
+
                 }
+
 
             ]
 

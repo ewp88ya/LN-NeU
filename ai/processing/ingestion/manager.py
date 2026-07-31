@@ -1,5 +1,6 @@
 from processing.ingestion.base import BaseIngestion
 from processing.ingestion.document import Document
+import json
 
 
 
@@ -39,9 +40,19 @@ class IngestionManager(BaseIngestion):
         data
     ):
 
+        content = data.get(
+            "content"
+        )
+
+        if isinstance(content, dict):
+            content = json.dumps(
+                content
+            )
+
+
         document = Document(
             id=data.get("id"),
-            content=data.get("content"),
+            content=content,
             metadata=data.get(
                 "metadata",
                 {}

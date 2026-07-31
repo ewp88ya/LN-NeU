@@ -10,7 +10,7 @@ from contracts.agent_contract import (
 class NetworkAgent(BaseAgent):
 
 
-    name = "network-agent"
+    name = "network"
 
 
 

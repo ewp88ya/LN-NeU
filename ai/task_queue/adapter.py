@@ -40,26 +40,23 @@ class QueueTask(BaseModel):
 
 class TaskAdapter:
 
-
     def convert(
         self,
         payload: dict
     ):
 
         return QueueTask(
-
             taskId=payload.get(
                 "taskId"
             ),
-
             action=payload.get(
-                "action"
+                "action",
+                payload.get("type")
             ),
-
             input=payload.get(
-                "input"
+                "input",
+                payload.get("payload")
             ),
-
             metadata=payload.get(
                 "metadata",
                 {}

@@ -25,7 +25,7 @@ class AgentSelector:
         ):
 
             agents.append(
-                "network-agent"
+                "network"
             )
 
 
@@ -40,7 +40,7 @@ class AgentSelector:
         ):
 
             agents.append(
-                "analysis-agent"
+                "analysis"
             )
 
 
@@ -55,14 +55,14 @@ class AgentSelector:
         ):
 
             agents.append(
-                "optimizer-agent"
+                "optimizer"
             )
 
 
         if not agents:
 
             agents = [
-                "analysis-agent"
+                "analysis"
             ]
 
 

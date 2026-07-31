@@ -3,6 +3,7 @@ from .instance import task_queue
 from .worker import AsyncWorker
 from .retry import RetryPolicy
 from .dead_letter import DeadLetterQueue
+from .auto_recovery import AutoRecoveryManager
 
 __all__ = [
     "TaskQueue",

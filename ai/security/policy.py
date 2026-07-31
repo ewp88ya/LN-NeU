@@ -1,96 +1,81 @@
 class SecurityPolicy:
 
-
     def __init__(self):
 
         self.policies = {
 
-
             "agents": {
 
                 "analysis": [
-
                     "memory",
-
                     "llm"
-
                 ],
-
 
                 "network": [
-
                     "network_tool"
-
                 ],
 
-
                 "optimizer": [
-
                     "analysis"
-
                 ]
 
             },
-
-
 
             "tools": {
 
                 "ping_server": [
-
                     "network",
-
                     "analysis"
-
                 ],
-
 
                 "dns_lookup": [
-
                     "network",
-
                     "analysis"
-
                 ],
 
-
                 "http_check": [
-
                     "network"
-
                 ]
 
             },
 
-
-
             "actions": {
 
                 "analyze": [
-
                     "analysis"
-
                 ],
 
+                "analysis": [
+                    "analysis"
+                ],
 
                 "network": [
-
                     "network"
-
                 ],
 
+                "network_scan": [
+                    "network"
+                ],
+
+                "ping": [
+                    "network"
+                ],
+
+                "dns_lookup": [
+                    "network"
+                ],
+
+                "http_check": [
+                    "network"
+                ],
 
                 "optimize": [
-
                     "optimizer"
-
                 ]
 
             }
 
         }
-
-
 
     def allow_agent(
         self,
@@ -105,10 +90,7 @@ class SecurityPolicy:
             []
         )
 
-
         return capability in allowed
-
-
 
     def allow_tool(
         self,
@@ -123,10 +105,7 @@ class SecurityPolicy:
             []
         )
 
-
         return agent in allowed
-
-
 
     def allow_action(
         self,
@@ -140,6 +119,5 @@ class SecurityPolicy:
             action,
             []
         )
-
 
         return agent in allowed

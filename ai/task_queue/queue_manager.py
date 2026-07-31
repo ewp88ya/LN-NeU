@@ -96,3 +96,14 @@ class QueueManager:
             result[name] = queue.stats()
 
         return result
+
+    def exists(
+        self,
+        queue_name="default"
+    ):
+
+        return (
+            queue_name
+            in
+            self.queues
+        )

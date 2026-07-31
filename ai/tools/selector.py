@@ -9,9 +9,16 @@ class ToolSelector:
         action = task.action.lower()
 
 
+        #
+        # Network operations
+        #
+
         if action in [
             "network",
-            "analysis"
+            "network_scan",
+            "ping",
+            "dns_lookup",
+            "http_check"
         ]:
 
             return [
@@ -25,11 +32,20 @@ class ToolSelector:
             ]
 
 
-        if action == "ping":
+        #
+        # Analysis operations
+        #
+
+        if action in [
+            "analysis",
+            "analyze"
+        ]:
 
             return [
 
-                "ping_server"
+                "ping_server",
+
+                "dns_lookup"
 
             ]
 

@@ -8,7 +8,7 @@ from contracts.agent_contract import (
 
 class OptimizerAgent(BaseAgent):
 
-    name = "optimizer-agent"
+    name = "optimizer"
 
     def __init__(
         self,

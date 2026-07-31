@@ -100,10 +100,14 @@ class InputStage:
         # Security Check
         # =========================
 
-        security = self.prompt_guard.inspect(
-            task.input
-        )
+        security_text = task.input
 
+        if isinstance(security_text, dict):
+            security_text = str(security_text)
+
+        security = self.prompt_guard.inspect(
+            security_text
+        )
 
         if not security["allowed"]:
 

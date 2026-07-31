@@ -8,9 +8,19 @@ class AgentManager:
         self.registry = AgentRegistry()
 
 
-    def register_agent(self, agent):
+    def register_agent(
+        self,
+        agent
+    ):
 
-        self.registry.register(agent)
+        print(
+            "REGISTER AGENT:",
+            agent.name
+        )
+
+        self.registry.register(
+            agent
+        )
 
 
     async def execute(
@@ -27,7 +37,21 @@ class AgentManager:
 
     ):
 
-        agent = self.registry.get(agent_name)
+        print(
+            "REQUEST AGENT:",
+            agent_name
+        )
+
+        print(
+            "AVAILABLE AGENTS:",
+            self.registry.list()
+        )
+
+
+        agent = self.registry.get(
+            agent_name
+        )
+
 
         if not agent:
 
@@ -41,4 +65,6 @@ class AgentManager:
         agent.selector = selector
 
 
-        return await agent.run(task)
+        return await agent.run(
+            task
+        )

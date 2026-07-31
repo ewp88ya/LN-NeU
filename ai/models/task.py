@@ -1,8 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Dict, Any
-from contracts.agent_contract import AgentTask
 
-AITask = AgentTask
+
 
 class AITask(BaseModel):
 
@@ -15,10 +14,12 @@ class AITask(BaseModel):
 
     action: str
 
-    input: str
+    input: Any
 
 
-    context: Optional[Dict[str, Any]] = None
+    context: Optional[
+        Dict[str, Any]
+    ] = None
 
 
     # Workflow runtime fields

@@ -1,13 +1,15 @@
 import asyncio
+import time
 
 from task_queue.adapter import TaskAdapter
 from task_queue.retry import RetryPolicy
 from task_queue.dead_letter import DeadLetterQueue
-from agents.executor import AgentExecutor
+from task_queue.auto_recovery import AutoRecoveryManager
+from task_queue.metrics import QueueMetrics
 from memory.manager import MemoryManager
 
-class ConcurrentWorker:
 
+class ConcurrentWorker:
 
     def __init__(
         self,
@@ -15,100 +17,96 @@ class ConcurrentWorker:
         workflow,
         workers=3
     ):
-
         self.queue = queue
-
         self.workflow = workflow
-
         self.workers = workers
 
         self.adapter = TaskAdapter()
-
         self.retry = RetryPolicy()
-
         self.dead_letter = DeadLetterQueue()
 
-        self.agent = AgentExecutor()
-
         self.memory = MemoryManager()
+        self.metrics = QueueMetrics()
 
         self.running = False
 
+        self.worker_state = {}
+        self.worker_tasks = {}
+        self.monitor_task = None
 
+        self.recovery = AutoRecoveryManager(
+            self,
+            max_restart=3
+        )
 
     async def process_worker(
         self,
         worker_id
     ):
 
-        print(
-            f"Worker-{worker_id} started"
-        )
+        print(f"WORKER {worker_id} STARTED", flush=True)
+
+        self.worker_state[worker_id] = {
+            "status": "idle",
+            "last_seen": time.time()
+        }
 
         while self.running:
 
-            payload = None
+            self.worker_state[worker_id]["last_seen"] = time.time()
+
+            payload = self.queue.pop()
+
+            if payload is None:
+
+                self.worker_state[worker_id]["status"] = "idle"
+
+                await asyncio.sleep(0.05)
+
+                continue
 
             try:
 
-                payload = self.queue.pop()
+                self.worker_state[worker_id]["status"] = "busy"
 
-                if payload is None:
+                print("POP", payload["task"]["taskId"])
 
-                    await asyncio.sleep(
-                        0.2
-                    )
-
-                    continue
-
-
-                print(
-                    f"Worker-{worker_id} processing {payload['task']['taskId']}"
-                )
-
+                print("PAYLOAD", payload)
 
                 task = self.adapter.convert(
                     payload["task"]
                 )
 
+                print("CONVERT OK")
 
                 result = await self.workflow.execute(
                     task
                 )
 
-
                 print(
-                    f"Worker-{worker_id} completed:"
+                    "WORKFLOW RESULT:",
+                    result,
+                    flush=True
                 )
 
-                print(
-                    result
-                )
+                print("EXECUTE OK")
 
+                self.metrics.record_processed()
 
-                #
-                # Workflow gagal
-                #
                 if (
                     isinstance(result, dict)
                     and result.get("status") == "failed"
                 ):
 
-                    if self.retry.should_retry(
-                        payload
-                    ):
+                    self.metrics.record_failed()
+
+                    if self.retry.should_retry(payload):
 
                         payload = self.retry.increase_retry(
                             payload
                         )
 
-                        print(
-                            f"Worker-{worker_id} retry #{payload['retry_count']} -> {payload['task']['taskId']}"
-                        )
-
-                        self.queue.push(
-                            payload
-                        )
+                        self.queue.push(payload)
 
                     else:
 
@@ -117,39 +115,21 @@ class ConcurrentWorker:
                             reason="retry_limit"
                         )
 
-                        print(
-                            f"Worker-{worker_id} moved to DLQ -> {payload['task']['taskId']}"
-                        )
-
+                        self.metrics.record_dead_letter()
 
             except Exception as error:
 
-                print(
-                    f"Worker-{worker_id} failed:"
-                )
+                self.metrics.record_failed()
 
-                print(
-                    error
-                )
+                if payload:
 
-
-                if payload is not None:
-
-                    if self.retry.should_retry(
-                        payload
-                    ):
+                    if self.retry.should_retry(payload):
 
                         payload = self.retry.increase_retry(
                             payload
                         )
 
-                        print(
-                            f"Worker-{worker_id} exception retry #{payload['retry_count']} -> {payload['task']['taskId']}"
-                        )
-
-                        self.queue.push(
-                            payload
-                        )
+                        self.queue.push(payload)
 
                     else:
 
@@ -158,46 +138,72 @@ class ConcurrentWorker:
                             reason=str(error)
                         )
 
-                        print(
-                            f"Worker-{worker_id} exception moved to DLQ -> {payload['task']['taskId']}"
-                        )
+                        self.metrics.record_dead_letter()
 
-                        print(
-                            payload
-                        )
+            finally:
 
+                self.worker_state[worker_id]["status"] = "idle"
 
+        print(f"Worker-{worker_id} exit")
 
-    async def start(self):
+    async def monitor_workers(
+        self
+    ):
+        while self.running:
 
-        self.running = True
-
-        workers = []
-
-
-        for index in range(
-            self.workers
-        ):
-
-            workers.append(
-
-                asyncio.create_task(
-
-                    self.process_worker(
-                        index + 1
-                    )
-
-                )
-
+            self.metrics.record_queue_depth(
+                self.queue.size()
             )
 
+            await asyncio.sleep(1)
 
-        await asyncio.gather(
-            *workers
+    async def start(
+        self
+    ):
+        self.running = True
+
+        self.monitor_task = asyncio.create_task(
+            self.monitor_workers()
         )
 
+        for index in range(self.workers):
 
+            worker_id = index + 1
 
-    def stop(self):
+            task = asyncio.create_task(
+                self.process_worker(worker_id)
+            )
 
+            self.worker_tasks[worker_id] = task
+
+        while self.running:
+
+            await asyncio.sleep(1)
+
+        await asyncio.gather(
+            *self.worker_tasks.values(),
+            return_exceptions=True
+        )
+
+        if self.monitor_task:
+            await asyncio.gather(
+                self.monitor_task,
+                return_exceptions=True
+            )
+
+    def stop(
+        self
+    ):
         self.running = False
+
+        for task in self.worker_tasks.values():
+            if not task.done():
+                task.cancel()
+
+        if self.monitor_task and not self.monitor_task.done():
+            self.monitor_task.cancel()
+
+    def worker_health(
+        self
+    ):
+        return self.worker_state

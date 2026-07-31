@@ -30,14 +30,21 @@ class QueueHealth:
 
             "status": "healthy" if redis_ok else "unhealthy",
 
+            "healthy":
+                redis_ok and
+                self.queue.size() < 1000,
+
             "redis": redis_ok,
 
-            "queue_size": self.queue.size() if redis_ok else None,
+            "queue_size":
+                self.queue.size()
+                if redis_ok else None,
 
-            "dead_letter_size": self.dlq.size() if redis_ok else None
+            "dead_letter_size":
+                self.dlq.size()
+                if redis_ok else None
 
         }
-
 
     def print_health(self):
 

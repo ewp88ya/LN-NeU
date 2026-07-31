@@ -10,7 +10,7 @@ from providers.factory import get_provider
 
 class AnalysisAgent(BaseAgent):
 
-    name = "analysis-agent"
+    name = "analysis"
 
     def __init__(
         self,

@@ -97,9 +97,8 @@ class ProcessingOrchestrator:
 
         # 8. Retrieval
         retrieved = self.retrieval.retrieve(
-            task.input
+            loaded["content"]
         )
-
 
         # 9. RAG Context
         rag_context = self.rag.build(

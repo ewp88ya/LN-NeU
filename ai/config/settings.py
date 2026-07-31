@@ -1,13 +1,13 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
+class Settings:
 
     ENVIRONMENT: str = "development"
 
     AI_PROVIDER: str = "ollama"
 
-    REDIS_URL: str = "redis://redis:6379"
+    REDIS_URL: str = "redis://localhost:6379"
 
     OLLAMA_URL: str = (
         "http://ollama:11434/api/generate"
