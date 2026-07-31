@@ -44,6 +44,15 @@ class QueueMetrics:
 
         self.prefix = "ln-neu-metrics"
 
+        self.local_metrics = {
+            "queued": 0,
+            "processed": 0,
+            "failed": 0,
+            "retry": 0,
+            "recovery": 0,
+            "dead_letter": 0,
+        }
+
 
 
     # =========================
@@ -71,15 +80,17 @@ class QueueMetrics:
 
 
         if not self.redis_available:
-            return
 
+           self.local_metrics[metric] = (
+               self.local_metrics.get(metric, 0) + value
+           )
+
+           return
 
         self.redis.incrby(
             self._key(metric),
             value
         )
-
-
 
     # =========================
     # Queue Events
