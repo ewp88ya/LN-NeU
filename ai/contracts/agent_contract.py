@@ -16,7 +16,7 @@ class AgentTask(BaseModel):
 
     action: str
 
-    input: Any
+    input: Dict[str, Any]
 
     context: Dict[str, Any] = Field(
         default_factory=dict
@@ -31,7 +31,6 @@ class AgentTask(BaseModel):
     plan: Optional[Any] = None
 
     processed: Optional[Any] = None
-
 
 class AgentResult(BaseModel):
 

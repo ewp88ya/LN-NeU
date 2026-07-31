@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from router.task_router import TaskRouter
 from router.monitoring_router import router as monitoring_router
 
+from router.admin_router import router as admin_router
 
 # =========================
 # AI TASK CONTRACT
@@ -78,6 +79,15 @@ app = FastAPI(
 # =========================
 
 task_router = TaskRouter()
+
+
+# =========================
+# Admin API
+# =========================
+
+app.include_router(
+    admin_router
+)
 
 
 # =========================
