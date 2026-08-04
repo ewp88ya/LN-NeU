@@ -1,4 +1,4 @@
-# AI SaaS core system
+# AI core system
 
 Full AI + Backend + Database stack using Docker
 
