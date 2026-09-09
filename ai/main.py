@@ -3,9 +3,10 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from pydantic import BaseModel, Field
 
+from integration_auth import require_santor_api_key
 from router.task_router import TaskRouter
 from router.monitoring_router import router as monitoring_router
 
@@ -121,7 +122,7 @@ async def health():
 # Execute
 # =========================
 
-@app.post("/execute")
+@app.post("/execute", dependencies=[Depends(require_santor_api_key)])
 async def execute(task: AITask):
 
     return await task_router.route(task)
