@@ -1,0 +1,14 @@
+services:
+  ln-neu-ai:
+    environment:
+      SANTOR_API_KEY: ${SANTOR_API_KEY:?SANTOR_API_KEY is required}
+    networks:
+      - lnneu-network
+      - santor-network
+
+networks:
+  lnneu-network:
+    driver: bridge
+  santor-network:
+    external: true
+    name: docker_santor-network
