@@ -67,7 +67,7 @@ class BaseAgent(ABC):
             task
         )
 
-        if tool is None:
+        if not tool:
 
             return None
 

@@ -66,6 +66,10 @@ services:
     volumes:
       - ollama_data:/root/.ollama
 
+    networks:
+      default:
+        aliases:
+          - ollama
 
 
   ln-neu-core:
@@ -131,6 +135,7 @@ services:
 
     command:
       - python
+      - -u
       - -m
       - task_queue.runner
 
@@ -153,6 +158,12 @@ services:
       OLLAMA_URL: http://ollama:11434/api/generate
 
       OLLAMA_MODEL: qwen2.5:7b
+
+      OLLAMA_NUM_PREDICT: 256
+
+      OLLAMA_TIMEOUT_SECONDS: 180
+
+      AI_PROVIDER: ollama
 
 
 

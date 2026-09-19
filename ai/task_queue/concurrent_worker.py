@@ -69,7 +69,7 @@ class ConcurrentWorker:
 
                 self.worker_state[worker_id]["status"] = "busy"
 
-                print("POP", payload["task"]["taskId"])
+                print("POP", payload["task"]["taskId"], flush=True)
 
                 print("PAYLOAD", payload)
 
@@ -118,6 +118,8 @@ class ConcurrentWorker:
                         self.metrics.record_dead_letter()
 
             except Exception as error:
+
+                print("WORKER ERROR:", repr(error), flush=True)
 
                 self.metrics.record_failed()
 

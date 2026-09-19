@@ -49,6 +49,10 @@ class SecurityPolicy:
                     "analysis"
                 ],
 
+                "chat": [
+                    "analysis"
+                ],
+
                 "network": [
                     "network"
                 ],

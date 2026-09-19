@@ -1,6 +1,7 @@
 from config.settings import settings
 
 import httpx
+import os
 import time
 from datetime import datetime, UTC
 
@@ -54,7 +55,7 @@ class OllamaProvider:
 
                 "temperature": 0.7,
 
-                "num_predict": 1024
+                "num_predict": int(os.getenv("OLLAMA_NUM_PREDICT", "256"))
 
             }
 
@@ -83,7 +84,7 @@ class OllamaProvider:
 
         async with httpx.AsyncClient(
 
-            timeout=180.0
+            timeout=float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "180"))
 
         ) as client:
 

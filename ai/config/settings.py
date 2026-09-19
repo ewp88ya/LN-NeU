@@ -1,8 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings:
-
+class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     AI_PROVIDER: str = "ollama"
