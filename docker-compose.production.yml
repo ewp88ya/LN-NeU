@@ -52,8 +52,6 @@ services:
 
     restart: always
 
-    ports:
-      - "6379:6379"
 
     healthcheck:
       test:
@@ -104,8 +102,6 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL}
 
 
-    ports:
-      - "8100:8000"
 
 
     depends_on:
