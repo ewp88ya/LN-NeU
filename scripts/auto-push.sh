@@ -1,14 +1,6 @@
 #!/bin/bash
+set -euo pipefail
 
-while true; do
-  inotifywait -r -e modify,create,delete --exclude 'node_modules|dist|.git' .
-
-  git add .
-
-  # cek apakah ada perubahan
-  if ! git diff --cached --quiet; then
-    git commit -m "auto sync $(date +%H:%M:%S)"
-    git pull --rebase origin main
-    git push origin main
-  fi
-done
+echo "Automatic push is disabled by project policy."
+echo "Use the normal manual workflow: git status && git add && git commit && git push origin main"
+exit 1

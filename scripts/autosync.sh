@@ -1,18 +1,6 @@
 #!/bin/bash
+set -euo pipefail
 
-echo "🚀 Smart Auto Sync Activated"
-
-while true
-do
-  inotifywait -r -e modify,create,delete --exclude '(.git|node_modules)' .
-
-  echo "📦 Changes detected..."
-
-  git add .
-
-  git commit -m "auto sync $(date +'%H:%M:%S')" || echo "No changes to commit"
-
-  git push origin main
-
-  echo "✅ Synced to GitHub"
-done
+echo "Automatic sync/push is disabled by project policy."
+echo "Use the normal manual workflow: git status && git add && git commit && git push origin main"
+exit 1
