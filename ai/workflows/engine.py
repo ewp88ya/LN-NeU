@@ -206,32 +206,6 @@ class WorkflowEngine:
         agent=None
     ):
 
-        print(
-            "DEBUG ENTER EXECUTE",
-            flush=True
-        )
-
-        print(
-            "DEBUG TASK:",
-            task,
-            flush=True
-        )
-
-        print(
-            "DEBUG ACTION VALUE:",
-            task.action,
-            type(task.action),
-            flush=True
-        )
-
-        print(
-            "DEBUG INPUT VALUE:",
-            task.input,
-            type(task.input),
-            flush=True
-        )
-
-
         task_id = task.taskId
 
 
