@@ -71,9 +71,17 @@ class BaseAgent(ABC):
 
             return None
 
+        if isinstance(tool, list):
+
+            return await self.runtime.execute_all(
+                tool,
+                self.name,
+                **kwargs
+            )
+
         return await self.runtime.execute(
-            self.name,
             tool,
+            self.name,
             **kwargs
         )
 
