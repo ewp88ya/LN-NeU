@@ -107,98 +107,92 @@ jobs:
 
 
   docker-validation:
-
-
     runs-on: ubuntu-latest
-
-
     steps:
-
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create CI Environment
+      - name: Validate production Compose and build release images
+        shell: bash
         run: |
-          cp .env.test .env.production
+          set -euo pipefail
+          umask 077
+          cat > .env.production <<'EOF'
+          ENVIRONMENT=production
+          POSTGRES_USER=ci_lnneu
+          POSTGRES_PASSWORD=ci-only-not-for-deployment
+          POSTGRES_DB=lnneu_ci
+          DATABASE_URL=postgresql://ci_lnneu:ci-only-not-for-deployment@postgres:5432/lnneu_ci
+          REDIS_URL=redis://redis:6379
+          OLLAMA_URL=http://ollama:11434/api/generate
+          OLLAMA_MODEL=qwen2.5:7b
+          AI_PORT=8000
+          GHCR_OWNER=ewp88ya
+          VERSION=ci-validation
+          EOF
 
-      - name: Docker Compose Validation
-        run: |
-          docker compose \
-          --env-file .env.production \
-          -f docker-compose.production.yml \
-          config
-
-
-
-      - name: Docker Build Verification
-        run: |
-          docker compose \
-          --env-file .env.production \
-          -f docker-compose.production.yml \
-          build
-
-
-
-
+          docker compose --env-file .env.production -f docker-compose.production.yml config --quiet
+          docker compose --env-file .env.production -f docker-compose.production.yml config --images
+          docker build -t ghcr.io/ewp88ya/ln-neu-core:ci-validation ./backend
+          docker build -t ghcr.io/ewp88ya/ln-neu-ai:ci-validation ./ai
+          docker tag ghcr.io/ewp88ya/ln-neu-ai:ci-validation ghcr.io/ewp88ya/ln-neu-ai-worker:ci-validation
+          rm -f .env.production
 
   integration-test:
-
-
     runs-on: ubuntu-latest
-
-
     steps:
-
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create CI Environment
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create isolated CI environment
+        shell: bash
         run: |
-          cp .env.test .env.production
+          set -euo pipefail
+          umask 077
+          cat > .env.production <<'EOF'
+          ENVIRONMENT=production
+          POSTGRES_USER=ci_lnneu
+          POSTGRES_PASSWORD=ci-only-not-for-deployment
+          POSTGRES_DB=lnneu_ci
+          DATABASE_URL=postgresql://ci_lnneu:ci-only-not-for-deployment@postgres:5432/lnneu_ci
+          REDIS_URL=redis://redis:6379
+          OLLAMA_URL=http://ollama:11434/api/generate
+          OLLAMA_MODEL=qwen2.5:7b
+          AI_PORT=8000
+          GHCR_OWNER=ewp88ya
+          VERSION=ci-validation
+          EOF
 
-      - name: Start Test Services
+      - name: Build AI image for integration tests
+        run: docker build -t ghcr.io/ewp88ya/ln-neu-ai:ci-validation ./ai
+
+      - name: Start test services
+        run: docker compose --env-file .env.production -f docker-compose.production.yml up -d postgres redis ln-neu-ai
+
+      - name: Wait for AI health check
+        shell: bash
         run: |
-          docker compose \
-          --env-file .env.production \
-          -f docker-compose.production.yml \
-          up -d postgres redis ln-neu-ai
+          set -euo pipefail
+          for i in {1..30}; do
+            status="$(docker inspect --format='{{.State.Health.Status}}' ln-neu-ai 2>/dev/null || true)"
+            if [[ "$status" == "healthy" ]]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose --env-file .env.production -f docker-compose.production.yml logs ln-neu-ai redis postgres
+          exit 1
 
+      - name: Run integration tests (fail on errors)
+        run: python -m pip install --upgrade pytest && pytest -q tests/integration
 
-
-      - name: Wait Services
-        run: |
-          sleep 20
-
-
-
-      - name: Service Health Check
-        run: |
-          docker ps
-
-          docker inspect \
-          --format='{{.State.Health.Status}}' \
-          ln-neu-ai || true
-
-
-
-      - name: Install Test Tools
-        run: |
-          python3 -m pip install pytest requests
-
-
-
-      - name: Run Integration Test
-        run: |
-          pytest tests/integration || true
-
-
-
-      - name: Shutdown Services
+      - name: Shutdown test services
         if: always()
         run: |
-          docker compose \
-          --env-file .env.production \
-          -f docker-compose.production.yml \
-          down
+          docker compose --env-file .env.production -f docker-compose.production.yml down -v || true
+          rm -f .env.production
