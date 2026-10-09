@@ -82,7 +82,7 @@ services:
 
   ln-neu-ai:
 
-    image: ghcr.io/${GHCR_OWNER}/ln-neu-ai:${VERSION}
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/ln-neu-ai:${VERSION:?VERSION is required}
 
     container_name: ln-neu-ai
 
@@ -93,13 +93,17 @@ services:
 
     environment:
 
-      ENVIRONMENT: ${ENVIRONMENT}
+      ENVIRONMENT: ${ENVIRONMENT:?ENVIRONMENT must be set}
 
-      REDIS_URL: ${REDIS_URL}
+      AI_PROVIDER: ${AI_PROVIDER:?AI_PROVIDER must be set}
 
-      OLLAMA_URL: ${OLLAMA_URL}
+      SANTOR_API_KEY: ${SANTOR_API_KEY:?SANTOR_API_KEY must be set}
 
-      OLLAMA_MODEL: ${OLLAMA_MODEL}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL must be set}
+
+      OLLAMA_URL: ${OLLAMA_URL:?OLLAMA_URL must be set}
+
+      OLLAMA_MODEL: ${OLLAMA_MODEL:?OLLAMA_MODEL must be set}
 
 
 
@@ -153,7 +157,7 @@ services:
 
   ln-neu-ai-worker:
 
-    image: ghcr.io/${GHCR_OWNER}/ln-neu-ai-worker:${VERSION}
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/ln-neu-ai-worker:${VERSION:?VERSION is required}
 
 
     container_name: ln-neu-ai-worker
@@ -175,13 +179,15 @@ services:
 
     environment:
 
-      ENVIRONMENT: ${ENVIRONMENT}
+      ENVIRONMENT: ${ENVIRONMENT:?ENVIRONMENT must be set}
 
-      REDIS_URL: ${REDIS_URL}
+      AI_PROVIDER: ${AI_PROVIDER:?AI_PROVIDER must be set}
 
-      OLLAMA_URL: ${OLLAMA_URL}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL must be set}
 
-      OLLAMA_MODEL: ${OLLAMA_MODEL}
+      OLLAMA_URL: ${OLLAMA_URL:?OLLAMA_URL must be set}
+
+      OLLAMA_MODEL: ${OLLAMA_MODEL:?OLLAMA_MODEL must be set}
 
 
 
@@ -259,7 +265,7 @@ services:
   ln-neu-core:
 
 
-    image: ghcr.io/${GHCR_OWNER}/ln-neu-core:${VERSION}
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/ln-neu-core:${VERSION:?VERSION is required}
 
 
 
