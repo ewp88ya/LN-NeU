@@ -124,19 +124,29 @@ jobs:
       - uses: actions/checkout@v4
 
 
-      - name: Create Production Environment
+      - name: Validate production Compose and build release images
+        shell: bash
         run: |
-          cp .env.test .env.production
+          set -euo pipefail
+          umask 077
+          cat > .env.production <<'EOF'
+          ENVIRONMENT=production
+          POSTGRES_USER=ci_lnneu
+          POSTGRES_PASSWORD=ci-only-not-for-deployment
+          POSTGRES_DB=lnneu_ci
+          DATABASE_URL=postgresql://ci_lnneu:ci-only-not-for-deployment@postgres:5432/lnneu_ci
+          REDIS_URL=redis://redis:6379
+          OLLAMA_URL=http://ollama:11434/api/generate
+          OLLAMA_MODEL=qwen2.5:7b
+          AI_PORT=8000
+          GHCR_OWNER=ewp88ya
+          VERSION=ci-validation
+          EOF
+          trap 'rm -f .env.production' EXIT
 
-      - name: Validate Docker Compose
-        run: |
-          docker compose \
-          -f docker-compose.production.yml \
-          config
+          docker compose --env-file .env.production -f docker-compose.production.yml config --quiet
+          docker compose --env-file .env.production -f docker-compose.production.yml config --images
 
-
-      - name: Docker Build Verification
-        run: |
-          docker compose \
-          -f docker-compose.production.yml \
-          build
+          docker build -t ghcr.io/ewp88ya/ln-neu-core:ci-validation ./backend
+          docker build -t ghcr.io/ewp88ya/ln-neu-ai:ci-validation ./ai
+          docker tag ghcr.io/ewp88ya/ln-neu-ai:ci-validation ghcr.io/ewp88ya/ln-neu-ai-worker:ci-validation
