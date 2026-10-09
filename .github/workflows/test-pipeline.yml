@@ -233,3 +233,15 @@ jobs:
         run: |
           docker compose --env-file .env.production -f docker-compose.production.yml -f docker-compose.ci.yml down -v || true
           rm -f .env.production docker-compose.ci.yml
+
+
+  rollback-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate rollback safety and failure recovery
+        run: |
+          set -euo pipefail
+          bash -n scripts/rollback.sh scripts/test-rollback.sh
+          bash scripts/test-rollback.sh
