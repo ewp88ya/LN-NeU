@@ -203,6 +203,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          for i in {1..30}; do
+            status="$(docker inspect --format='{{.State.Health.Status}}' ln-neu-postgres 2>/dev/null || true)"
+            if [[ "$status" == "healthy" ]]; then
+              break
+            fi
+            sleep 2
+          done
+          test "$(docker inspect --format='{{.State.Health.Status}}' ln-neu-postgres)" = "healthy"
           docker exec ln-neu-postgres psql -U ci_lnneu -d lnneu_ci -v ON_ERROR_STOP=1 \
             -c "CREATE TABLE ci_backup_probe (id integer PRIMARY KEY, note text);" \
             -c "INSERT INTO ci_backup_probe (id, note) VALUES (1, 'backup-restore-ok');"
