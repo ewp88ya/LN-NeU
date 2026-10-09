@@ -150,7 +150,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Create isolated CI environment
+      - name: Create isolated CI environment and test-only port override
         shell: bash
         run: |
           set -euo pipefail
@@ -168,13 +168,20 @@ jobs:
           AI_PORT=8000
           GHCR_OWNER=ewp88ya
           VERSION=ci-validation
+          SANTOR_API_KEY=ci-only-placeholder-secret-not-for-production-0001
+          EOF
+          cat > docker-compose.ci.yml <<'EOF'
+          services:
+            ln-neu-ai:
+              ports:
+                - "127.0.0.1:8100:8000"
           EOF
 
       - name: Build AI image for integration tests
         run: docker build -t ghcr.io/ewp88ya/ln-neu-ai:ci-validation ./ai
 
       - name: Start test services
-        run: docker compose --env-file .env.production -f docker-compose.production.yml up -d postgres redis ln-neu-ai
+        run: docker compose --env-file .env.production -f docker-compose.production.yml -f docker-compose.ci.yml up -d postgres redis ln-neu-ai
 
       - name: Wait for AI health check
         shell: bash
@@ -187,7 +194,7 @@ jobs:
             fi
             sleep 5
           done
-          docker compose --env-file .env.production -f docker-compose.production.yml logs ln-neu-ai redis postgres
+          docker compose --env-file .env.production -f docker-compose.production.yml -f docker-compose.ci.yml logs ln-neu-ai redis postgres
           exit 1
 
       - name: Run integration tests (fail on errors)
@@ -198,5 +205,5 @@ jobs:
       - name: Shutdown test services
         if: always()
         run: |
-          docker compose --env-file .env.production -f docker-compose.production.yml down -v || true
-          rm -f .env.production
+          docker compose --env-file .env.production -f docker-compose.production.yml -f docker-compose.ci.yml down -v || true
+          rm -f .env.production docker-compose.ci.yml
