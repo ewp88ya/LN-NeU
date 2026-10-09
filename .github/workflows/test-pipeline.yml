@@ -126,6 +126,7 @@ jobs:
           REDIS_URL=redis://redis:6379
           OLLAMA_URL=http://ollama:11434/api/generate
           OLLAMA_MODEL=qwen2.5:7b
+          SANTOR_API_KEY=ci-only-placeholder-secret-not-for-production-0001
           AI_PORT=8000
           GHCR_OWNER=ewp88ya
           VERSION=ci-validation
@@ -163,6 +164,7 @@ jobs:
           REDIS_URL=redis://redis:6379
           OLLAMA_URL=http://ollama:11434/api/generate
           OLLAMA_MODEL=qwen2.5:7b
+          SANTOR_API_KEY=ci-only-placeholder-secret-not-for-production-0001
           AI_PORT=8000
           GHCR_OWNER=ewp88ya
           VERSION=ci-validation
@@ -189,6 +191,8 @@ jobs:
           exit 1
 
       - name: Run integration tests (fail on errors)
+        env:
+          SANTOR_API_KEY: ci-only-placeholder-secret-not-for-production-0001
         run: python -m pip install --upgrade pytest && pytest -q tests/integration
 
       - name: Shutdown test services
